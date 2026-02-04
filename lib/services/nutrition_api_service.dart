@@ -3,8 +3,8 @@
 
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:liver_wise/config/app_config.dart';
-import 'package:liver_wise/models/nutrition_info.dart';
+import 'package:polywise/config/app_config.dart';
+import 'package:polywise/models/nutrition_info.dart';
 
 class NutritionApiService {
   /// Base URL for product-by-barcode lookups.

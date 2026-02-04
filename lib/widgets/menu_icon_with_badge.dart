@@ -3,7 +3,7 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:liver_wise/services/messaging_service.dart';
+import 'package:polywise/services/messaging_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MenuIconWithBadge extends StatefulWidget {

@@ -1,9 +1,9 @@
 // lib/pages/saved_posts_page.dart
 import 'package:flutter/material.dart';
-import 'package:liver_wise/services/feed_posts_service.dart';
-import 'package:liver_wise/services/auth_service.dart';
-import 'package:liver_wise/config/app_config.dart';
-import 'package:liver_wise/widgets/app_drawer.dart';
+import 'package:polywise/services/feed_posts_service.dart';
+import 'package:polywise/services/auth_service.dart';
+import 'package:polywise/config/app_config.dart';
+import 'package:polywise/widgets/app_drawer.dart';
 
 class SavedPostsPage extends StatefulWidget {
   const SavedPostsPage({super.key});

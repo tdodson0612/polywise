@@ -1,8 +1,8 @@
 // lib/pages/premium_page.dart - Optimized & cleaned (no tester logic)
 import 'package:flutter/material.dart';
-import 'package:liver_wise/services/auth_service.dart';
-import 'package:liver_wise/services/premium_service.dart';
-import 'package:liver_wise/services/scan_service.dart';
+import 'package:polywise/services/auth_service.dart';
+import 'package:polywise/services/premium_service.dart';
+import 'package:polywise/services/scan_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'dart:async';

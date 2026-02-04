@@ -1,8 +1,8 @@
 // lib/pages/messages_page.dart - FIXED: Badge refresh on page load + iOS badge clearing
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:liver_wise/services/friends_service.dart';
-import 'package:liver_wise/services/messaging_service.dart';
+import 'package:polywise/services/friends_service.dart';
+import 'package:polywise/services/messaging_service.dart';
 import 'package:logger/logger.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';

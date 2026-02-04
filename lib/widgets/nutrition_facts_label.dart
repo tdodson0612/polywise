@@ -3,8 +3,8 @@
 // iOS 14 Compatible | Production Ready
 
 import 'package:flutter/material.dart';
-import 'package:liver_wise/models/nutrition_info.dart';
-import 'package:liver_wise/liverhealthbar.dart';
+import 'package:polywise/models/nutrition_info.dart';
+import 'package:polywise/liverhealthbar.dart';
 
 class NutritionFactsLabel extends StatelessWidget {
   final NutritionInfo nutrition;

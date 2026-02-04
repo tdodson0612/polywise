@@ -1,6 +1,6 @@
 // lib/widgets/rating_dialog.dart - FIXED: Better error messages
 import 'package:flutter/material.dart';
-import 'package:liver_wise/services/ratings_service.dart';
+import 'package:polywise/services/ratings_service.dart';
 import '../services/error_handling_service.dart';
 
 class RatingDialog extends StatefulWidget {

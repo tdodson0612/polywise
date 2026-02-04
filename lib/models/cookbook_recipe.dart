@@ -1,6 +1,6 @@
 // lib/models/cookbook_recipe.dart - UPDATED WITH NUTRITION
 import 'dart:convert';
-import 'package:liver_wise/models/nutrition_info.dart';
+import 'package:polywise/models/nutrition_info.dart';
 
 class CookbookRecipe {
   final int id;

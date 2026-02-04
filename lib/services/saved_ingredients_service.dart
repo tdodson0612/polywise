@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:liver_wise/models/nutrition_info.dart';
+import 'package:polywise/models/nutrition_info.dart';
 
 class SavedIngredientsService {
   static const String _key = 'saved_ingredients';

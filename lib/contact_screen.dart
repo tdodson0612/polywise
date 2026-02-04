@@ -1,6 +1,6 @@
 // lib/contact_screen.dart - IMPROVED: Real-time validation & character count
 import 'package:flutter/material.dart';
-import 'package:liver_wise/services/contact_service.dart';
+import 'package:polywise/services/contact_service.dart';
 import 'widgets/app_drawer.dart';
 
 class ContactScreen extends StatefulWidget {

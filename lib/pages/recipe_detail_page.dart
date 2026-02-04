@@ -1,10 +1,10 @@
 // lib/pages/recipe_detail_page.dart - COMPLETE WITH NUTRITION
 import 'package:flutter/material.dart';
-import 'package:liver_wise/services/comments_service.dart';
-import 'package:liver_wise/services/grocery_service.dart';
-import 'package:liver_wise/services/feed_posts_service.dart';
-import 'package:liver_wise/widgets/nutrition_facts_label.dart';
-import 'package:liver_wise/models/nutrition_info.dart';
+import 'package:polywise/services/comments_service.dart';
+import 'package:polywise/services/grocery_service.dart';
+import 'package:polywise/services/feed_posts_service.dart';
+import 'package:polywise/widgets/nutrition_facts_label.dart';
+import 'package:polywise/models/nutrition_info.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../services/error_handling_service.dart';

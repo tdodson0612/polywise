@@ -1,7 +1,7 @@
 // lib/widgets/recipe_card.dart - UPDATED: Added Cookbook button
 import 'package:flutter/material.dart';
-import 'package:liver_wise/services/ratings_service.dart';
-import 'package:liver_wise/services/submitted_recipes_service.dart';
+import 'package:polywise/services/ratings_service.dart';
+import 'package:polywise/services/submitted_recipes_service.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';

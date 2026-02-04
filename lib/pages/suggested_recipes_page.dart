@@ -1,7 +1,7 @@
 // lib/pages/suggested_recipes_page.dart - FIXED: Use dedicated Worker search endpoint
 import 'package:flutter/material.dart';
-import 'package:liver_wise/services/favorite_recipes_service.dart';
-import 'package:liver_wise/services/grocery_service.dart';
+import 'package:polywise/services/favorite_recipes_service.dart';
+import 'package:polywise/services/grocery_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../widgets/premium_gate.dart';

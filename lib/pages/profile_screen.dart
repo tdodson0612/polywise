@@ -3,11 +3,11 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:liver_wise/services/account_deletion_service.dart';
-import 'package:liver_wise/services/friends_visibility_service.dart';
-import 'package:liver_wise/services/picture_service.dart';
-import 'package:liver_wise/services/profile_service.dart';
-import 'package:liver_wise/services/submitted_recipes_service.dart';
+import 'package:polywise/services/account_deletion_service.dart';
+import 'package:polywise/services/friends_visibility_service.dart';
+import 'package:polywise/services/picture_service.dart';
+import 'package:polywise/services/profile_service.dart';
+import 'package:polywise/services/submitted_recipes_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart'; 
 import 'dart:convert';
@@ -19,7 +19,7 @@ import '../services/tracker_service.dart';
 import '../liverhealthbar.dart';
 
 // 🔥 NEW — listens to refresh_profile events
-import 'package:liver_wise/services/profile_events.dart';
+import 'package:polywise/services/profile_events.dart';
 
 import '../widgets/app_drawer.dart';
 import '../widgets/premium_gate.dart';

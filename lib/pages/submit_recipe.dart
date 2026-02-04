@@ -1,16 +1,16 @@
 // lib/pages/submit_recipe.dart - COMPLETE WITH TABBED NUTRITION
 import 'package:flutter/material.dart';
-import 'package:liver_wise/services/submitted_recipes_service.dart';
-import 'package:liver_wise/services/grocery_service.dart';
+import 'package:polywise/services/submitted_recipes_service.dart';
+import 'package:polywise/services/grocery_service.dart';
 import '../services/database_service_core.dart';
 import '../services/auth_service.dart';
 import '../services/error_handling_service.dart';
-import 'package:liver_wise/services/local_draft_service.dart';
-import 'package:liver_wise/widgets/recipe_nutrition_display.dart';
-import 'package:liver_wise/services/recipe_nutrition_service.dart';
-import 'package:liver_wise/services/saved_ingredients_service.dart';
-import 'package:liver_wise/models/nutrition_info.dart';
-import 'package:liver_wise/widgets/nutrition_facts_label.dart'; // 🔥 ADDED
+import 'package:polywise/services/local_draft_service.dart';
+import 'package:polywise/widgets/recipe_nutrition_display.dart';
+import 'package:polywise/services/recipe_nutrition_service.dart';
+import 'package:polywise/services/saved_ingredients_service.dart';
+import 'package:polywise/models/nutrition_info.dart';
+import 'package:polywise/widgets/nutrition_facts_label.dart'; // 🔥 ADDED
 import 'dart:convert';
 import '../services/draft_recipes_service.dart';
 import '../models/draft_recipe.dart';

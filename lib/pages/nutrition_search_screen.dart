@@ -2,15 +2,15 @@
 // Updated with filter options: product, brand, ingredient, substitutes
 
 import 'package:flutter/material.dart';
-import 'package:liver_wise/models/nutrition_info.dart';
-import 'package:liver_wise/services/nutrition_api_service.dart';
-import 'package:liver_wise/widgets/nutrition_display.dart';
-import 'package:liver_wise/services/error_handling_service.dart';
-import 'package:liver_wise/services/search_history_service.dart';
-import 'package:liver_wise/liverhealthbar.dart';
-import 'package:liver_wise/widgets/nutrition_facts_label.dart';
-import 'package:liver_wise/services/saved_ingredients_service.dart';
-import 'package:liver_wise/services/grocery_service.dart';
+import 'package:polywise/models/nutrition_info.dart';
+import 'package:polywise/services/nutrition_api_service.dart';
+import 'package:polywise/widgets/nutrition_display.dart';
+import 'package:polywise/services/error_handling_service.dart';
+import 'package:polywise/services/search_history_service.dart';
+import 'package:polywise/liverhealthbar.dart';
+import 'package:polywise/widgets/nutrition_facts_label.dart';
+import 'package:polywise/services/saved_ingredients_service.dart';
+import 'package:polywise/services/grocery_service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../config/app_config.dart';

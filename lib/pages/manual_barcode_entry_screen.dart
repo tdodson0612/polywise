@@ -1,10 +1,10 @@
 // lib/pages/manual_barcode_entry_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:liver_wise/services/nutrition_api_service.dart';
-import 'package:liver_wise/models/nutrition_info.dart';
-import 'package:liver_wise/widgets/nutrition_display.dart';
-import 'package:liver_wise/services/error_handling_service.dart';
+import 'package:polywise/services/nutrition_api_service.dart';
+import 'package:polywise/models/nutrition_info.dart';
+import 'package:polywise/widgets/nutrition_display.dart';
+import 'package:polywise/services/error_handling_service.dart';
 import '../services/recipe_nutrition_service.dart';
 import '../liverhealthbar.dart';
 
