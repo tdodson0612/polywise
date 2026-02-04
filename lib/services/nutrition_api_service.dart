@@ -1,5 +1,4 @@
 // lib/services/nutrition_api_service.dart
-// ✅ IMPROVED: Better search relevance and filtering
 
 import 'dart:convert';
 import 'package:http/http.dart' as http;
