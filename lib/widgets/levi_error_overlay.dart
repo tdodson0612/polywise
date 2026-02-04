@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 
-/// Levi the liver character showing error messages in a cute way
+///Pauliethe liver character showing error messages in a cute way
 class LeviErrorOverlay extends StatefulWidget {
   final String title;
   final String message;
@@ -94,7 +94,7 @@ class _LeviErrorOverlayState extends State<LeviErrorOverlay>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Levi character
+                      //Pauliecharacter
                       Container(
                         width: 100,
                         height: 100,

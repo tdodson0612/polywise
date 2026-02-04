@@ -365,7 +365,7 @@ class ErrorHandlingService {
       actionCallback = null;
     }
 
-    // Show Levi error overlay
+    // ShowPaulieerror overlay
     showDialog(
       context: context,
       barrierDismissible: false, // Must tap button to dismiss
@@ -562,7 +562,7 @@ class ErrorHandlingService {
           children: [
             const Icon(Icons.error_outline, color: Colors.white, size: 20),
             const SizedBox(width: 12),
-            Expanded(child: Text('🫀 $message')), // Levi heart emoji
+            Expanded(child: Text('🫀 $message')), //Paulieheart emoji
           ],
         ),
         backgroundColor: Colors.red.shade400,
@@ -587,7 +587,7 @@ class ErrorHandlingService {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                '🫀 $message', // Levi heart emoji
+                '🫀 $message', //Paulieheart emoji
                 style: const TextStyle(fontSize: 15),
               ),
             ),
