@@ -15,7 +15,7 @@ import 'package:polywise/widgets/add_to_cookbook_button.dart';
 import 'package:polywise/models/nutrition_info.dart';
 import 'package:polywise/widgets/premium_gate.dart';
 import 'package:polywise/controllers/premium_gate_controller.dart';
-import 'package:polywise/liverhealthbar.dart';
+import 'package:polywise/polyhealthbar.dart';
 import 'package:polywise/services/auth_service.dart';
 import 'package:polywise/services/error_handling_service.dart';
 import 'package:polywise/models/favorite_recipe.dart';

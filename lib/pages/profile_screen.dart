@@ -16,7 +16,7 @@ import '../widgets/cookbook_section.dart';
 
 import '../widgets/disease_type_selector.dart';
 import '../services/tracker_service.dart';
-import '../liverhealthbar.dart';
+import '../polyhealthbar.dart';
 
 // 🔥 NEW — listens to refresh_profile events
 import 'package:polywise/services/profile_events.dart';

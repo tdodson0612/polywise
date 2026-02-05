@@ -1,6 +1,4 @@
 // lib/login.dart - COMPLETE UPDATED FILE
-// Replace your entire login.dart with this version
-
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -10,6 +8,9 @@ import 'services/error_handling_service.dart';
 import 'config/app_config.dart';
 import 'utils/screen_utils.dart';
 
+// 🎨 PolyWise Logo Palette
+const Color kPolyWiseTeal = Color(0xFF2FB4C1);
+const Color kPolyWisePurple = Color(0xFF7B4397);
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -249,7 +250,8 @@ class _LoginPageState extends State<LoginPage> {
               });
             }
           } else {
-            ErrorHandlingService.showSuccess(context, 'Welcome to Liver Food Scanner!');
+            // Rebranded welcome message
+            ErrorHandlingService.showSuccess(context, 'Welcome to PolyWise!');
             await Future.delayed(const Duration(milliseconds: 500));
             
             if (mounted) {
@@ -353,7 +355,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         title: const Row(
           children: [
-            Icon(Icons.lock_reset, color: Colors.blue),
+            Icon(Icons.lock_reset, color: kPolyWisePurple),
             SizedBox(width: 12),
             Text('Reset Password'),
           ],
@@ -391,7 +393,7 @@ class _LoginPageState extends State<LoginPage> {
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
+              backgroundColor: kPolyWiseTeal,
               foregroundColor: Colors.white,
             ),
             child: const Text('Send Link'),
@@ -409,7 +411,6 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
 
       // ✅ CRITICAL: Only log, don't navigate from here
-      // Navigation is handled by _handleLogin() and _handleSignUp()
       switch (event) {
         case AuthChangeEvent.signedIn:
           AppConfig.debugPrint('🔐 Auth state: User signed in: ${session?.user.email}');
@@ -492,7 +493,7 @@ class _LoginPageState extends State<LoginPage> {
       appBar: AppBar(
         title: Text(_isLogin ? 'Sign In' : 'Create Account'),
         centerTitle: true,
-        backgroundColor: Colors.green,
+        backgroundColor: kPolyWiseTeal,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -531,9 +532,9 @@ class _LoginPageState extends State<LoginPage> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Icon(
-                              Icons.restaurant_menu,
+                              Icons.spa_rounded,
                               size: ScreenUtils.getIconSize(context, baseSize: 64),
-                              color: Colors.green.shade600,
+                              color: kPolyWisePurple,
                             ),
                             SizedBox(height: isTablet ? 24 : 16),
                             Text(
@@ -548,8 +549,8 @@ class _LoginPageState extends State<LoginPage> {
                             SizedBox(height: 8),
                             Text(
                               _isLogin 
-                                  ? 'Sign in to access your recipes'
-                                  : 'Join to unlock all features',
+                                  ? 'Sign in to access your dashboard'
+                                  : 'Join PolyWise for hormonal health',
                               style: TextStyle(
                                 fontSize: (isTablet ? 16 : 14) * ScreenUtils.getFontSizeMultiplier(context),
                                 color: Colors.grey.shade600,
@@ -666,7 +667,7 @@ class _LoginPageState extends State<LoginPage> {
                                         onChanged: (value) => setState(() => 
                                             _rememberMe = value ?? true
                                         ),
-                                        activeColor: Colors.green.shade600,
+                                        activeColor: kPolyWiseTeal,
                                       ),
                                       Expanded(
                                         child: Text(
@@ -692,7 +693,7 @@ class _LoginPageState extends State<LoginPage> {
                               child: ElevatedButton(
                                 onPressed: _isLoading ? null : _submitForm,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green.shade600,
+                                  backgroundColor: kPolyWiseTeal,
                                   foregroundColor: Colors.white,
                                   disabledBackgroundColor: Colors.grey.shade300,
                                   shape: RoundedRectangleBorder(
@@ -739,7 +740,7 @@ class _LoginPageState extends State<LoginPage> {
                                 child: Text(
                                   "Forgot your password?",
                                   style: TextStyle(
-                                    color: Colors.green.shade600,
+                                    color: kPolyWisePurple,
                                     fontSize: (isTablet ? 16 : 14) * ScreenUtils.getFontSizeMultiplier(context),
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -805,7 +806,7 @@ class _LoginPageState extends State<LoginPage> {
                                     TextSpan(
                                       text: _isLogin ? 'Create one' : 'Sign in',
                                       style: TextStyle(
-                                        color: Colors.green.shade600,
+                                        color: kPolyWiseTeal,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),

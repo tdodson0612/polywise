@@ -37,6 +37,10 @@ import './pages/my_cookbook_page.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import './pages/saved_posts_page.dart';
 
+// 🎨 PolyWise Logo Palette
+const Color kPolyWiseTeal = Color(0xFF2FB4C1);
+const Color kPolyWisePurple = Color(0xFF7B4397);
+const Color kPolyWiseLavender = Color(0xFFBC9FE1);
 
 /// 🔥 Background FCM handler (Android only - required for messages when app is terminated)
 @pragma('vm:entry-point')
@@ -162,10 +166,10 @@ Widget _buildErrorApp(dynamic error) {
   final errorString = error.toString().toLowerCase();
 
   // Determine user-friendly message
-  String title = 'Unable to Start App';
+  String title = 'Unable to Start PolyWise';
   String message = 'Please check your internet connection and try again.';
   IconData icon = Icons.cloud_off_rounded;
-  Color iconColor = Colors.orange;
+  Color iconColor = kPolyWisePurple;
 
   if (errorString.contains('timeout') || errorString.contains('network')) {
     title = 'Connection Problem';
@@ -175,7 +179,7 @@ Widget _buildErrorApp(dynamic error) {
     title = 'Configuration Issue';
     message = 'The app needs to be updated. Please contact support.';
     icon = Icons.settings_rounded;
-    iconColor = Colors.blue;
+    iconColor = kPolyWiseTeal;
   } else {
     title = 'Startup Failed';
     message = 'Unable to start the app. Please try restarting.';
@@ -255,7 +259,7 @@ Widget _buildErrorApp(dynamic error) {
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green.shade600,
+                      backgroundColor: kPolyWiseTeal,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -270,15 +274,15 @@ Widget _buildErrorApp(dynamic error) {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
+                    color: kPolyWiseLavender.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.blue.shade200),
+                    border: Border.all(color: kPolyWiseLavender.withOpacity(0.5)),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         Icons.lightbulb_outline_rounded,
-                        color: Colors.blue.shade700,
+                        color: kPolyWisePurple,
                         size: 20,
                       ),
                       const SizedBox(width: 12),
@@ -287,7 +291,7 @@ Widget _buildErrorApp(dynamic error) {
                           'If the problem continues, try closing and reopening the app.',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Colors.blue.shade900,
+                            color: kPolyWisePurple,
                           ),
                         ),
                       ),
@@ -396,7 +400,7 @@ class _MyAppState extends State<MyApp> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Password reset link is invalid or expired. Please request a new one.'),
-                backgroundColor: Colors.orange,
+                backgroundColor: kPolyWisePurple,
               ),
             );
           }
@@ -441,7 +445,7 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       title: AppConfig.appName,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        colorScheme: ColorScheme.fromSeed(seedColor: kPolyWisePurple),
         useMaterial3: true,
         // iPad-friendly defaults
         textTheme: const TextTheme(
@@ -484,7 +488,7 @@ class _MyAppState extends State<MyApp> {
           builder: (context) => Scaffold(
             appBar: AppBar(
               title: const Text('Page Not Found'),
-              backgroundColor: Colors.green,
+              backgroundColor: kPolyWiseTeal,
               foregroundColor: Colors.white,
             ),
             body: Center(
@@ -496,13 +500,13 @@ class _MyAppState extends State<MyApp> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.1),
+                        color: kPolyWisePurple.withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.search_off_rounded,
                         size: 64,
-                        color: Colors.orange,
+                        color: kPolyWisePurple,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -545,7 +549,7 @@ class _MyAppState extends State<MyApp> {
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green.shade600,
+                          backgroundColor: kPolyWiseTeal,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),

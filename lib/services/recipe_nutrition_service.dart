@@ -3,7 +3,7 @@
 // iOS 14 Compatible | Production Ready
 
 import 'package:polywise/models/nutrition_info.dart';
-import 'package:polywise/liverhealthbar.dart';
+import 'package:polywise/polyhealthbar.dart';
 
 class RecipeNutrition {
   final double calories;

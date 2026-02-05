@@ -10,7 +10,7 @@ import '../services/error_handling_service.dart';
 import '../services/saved_ingredients_service.dart';
 import '../models/tracker_entry.dart';
 import '../models/nutrition_info.dart';
-import '../liverhealthbar.dart';
+import '../polyhealthbar.dart';
 import '../config/app_config.dart';
 import '../widgets/premium_gate.dart';
 import '../controllers/premium_gate_controller.dart';

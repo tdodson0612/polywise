@@ -1,6 +1,6 @@
 // lib/models/nutrition_info.dart - COMPLETE VERSION
 import 'dart:convert';
-import 'package:polywise/liverhealthbar.dart';
+import 'package:polywise/polyhealthbar.dart';
 
 class NutritionInfo {
   final String productName;

@@ -1,7 +1,7 @@
 // test/recipe_generator_test.dart - FIXED VERSION
 import 'package:flutter_test/flutter_test.dart';
 import 'package:polywise/home_screen.dart';
-import 'package:polywise/liverhealthbar.dart';
+import 'package:polywise/polyhealthbar.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

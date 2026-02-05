@@ -6,7 +6,7 @@ import 'package:polywise/models/nutrition_info.dart';
 import 'package:polywise/widgets/nutrition_display.dart';
 import 'package:polywise/services/error_handling_service.dart';
 import '../services/recipe_nutrition_service.dart';
-import '../liverhealthbar.dart';
+import '../polyhealthbar.dart';
 
 class ManualBarcodeEntryScreen extends StatefulWidget {
   const ManualBarcodeEntryScreen({super.key});
