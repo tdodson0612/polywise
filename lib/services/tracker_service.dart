@@ -457,10 +457,10 @@ class TrackerService {
     }
   }
 
-  /// Calculate daily score from meals with disease-aware logic
+  /// Calculate daily score from meals with PCOS-aware logic
   static int calculateDailyScore({
     required List<Map<String, dynamic>> meals,
-    String? diseaseType,
+    String? pcosType,
     String? exercise,
     String? waterIntake,
   }) {
@@ -468,17 +468,21 @@ class TrackerService {
       return 0; // No meals tracked = 0 score
     }
 
-    // Calculate score for each meal using disease-aware logic
+    // Calculate score for each meal using PCOS-aware logic
     final mealScores = meals.map((meal) {
-      return LiverHealthBar.calculateScore(
+      return PCOSHealthBar.calculateScore(
         fat: (meal['fat'] as num?)?.toDouble() ?? 0.0,
         sodium: (meal['sodium'] as num?)?.toDouble() ?? 0.0,
         sugar: (meal['sugar'] as num?)?.toDouble() ?? 0.0,
         calories: (meal['calories'] as num?)?.toDouble() ?? 0.0,
-        diseaseType: diseaseType,
+        pcosType: pcosType,
         protein: (meal['protein'] as num?)?.toDouble(),
         fiber: (meal['fiber'] as num?)?.toDouble(),
         saturatedFat: (meal['saturatedFat'] as num?)?.toDouble(),
+        monounsaturatedFat: (meal['monounsaturatedFat'] as num?)?.toDouble(),
+        polyunsaturatedFat: (meal['polyunsaturatedFat'] as num?)?.toDouble(),
+        transFat: (meal['transFat'] as num?)?.toDouble(),
+        carbs: (meal['carbs'] as num?)?.toDouble(),
       );
     }).toList();
 

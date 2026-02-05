@@ -1,14 +1,14 @@
-// lib/widgets/disease_type_selector.dart
+// lib/widgets/pcos_type_selector.dart
 
 import 'package:flutter/material.dart';
-import '../models/disease_nutrition_profile.dart';
+import '../models/pcos_type_nutrition_profile.dart';
 
-class DiseaseTypeSelector extends StatelessWidget {
+class PCOSTypeSelector extends StatelessWidget {
   final String currentValue;
   final Function(String) onChanged;
   final bool showGuidance;
 
-  const DiseaseTypeSelector({
+  const PCOSTypeSelector({
     super.key,
     required this.currentValue,
     required this.onChanged,
@@ -28,11 +28,11 @@ class DiseaseTypeSelector extends StatelessWidget {
             border: Border.all(color: Colors.grey.shade300),
           ),
           child: DropdownButtonFormField<String>(
-            initialValue: currentValue.isEmpty 
-                ? DiseaseNutritionProfile.OTHER 
+            value: currentValue.isEmpty 
+                ? PCOSTypeNutritionProfile.OTHER 
                 : currentValue,
             decoration: const InputDecoration(
-              labelText: 'Which type of liver disease do you have?',
+              labelText: 'Which type of PCOS do you have?',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.all(Radius.circular(12)),
               ),
@@ -42,7 +42,7 @@ class DiseaseTypeSelector extends StatelessWidget {
               ),
             ),
             isExpanded: true,
-            items: DiseaseNutritionProfile.getAllDiseaseTypes()
+            items: PCOSTypeNutritionProfile.getAllPCOSTypes()
                 .map((type) => DropdownMenuItem(
                       value: type,
                       child: Text(
@@ -81,7 +81,7 @@ class DiseaseTypeSelector extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    DiseaseNutritionProfile.getDiseaseGuidance(currentValue),
+                    PCOSTypeNutritionProfile.getPCOSGuidance(currentValue),
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.blue.shade900,

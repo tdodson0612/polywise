@@ -14,13 +14,13 @@ import 'dart:convert';
 import '../services/favorite_recipes_service.dart';
 import '../widgets/cookbook_section.dart';
 
-import '../widgets/disease_type_selector.dart';
+import '../widgets/pcos_type_selector.dart';
 import '../services/tracker_service.dart';
 import '../polyhealthbar.dart';
 
 // 🔥 NEW — listens to refresh_profile events
 import 'package:polywise/services/profile_events.dart';
-
+import '../models/pcos_type_nutrition_profile.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/premium_gate.dart';
 import '../widgets/recipe_card.dart';
@@ -76,7 +76,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool _isLoadingFavoritesCount = false;
 
 
-  String? _currentDiseaseType;
+  String? _currentPCOSType;
   int? _todayScore;
   int? _weeklyScore;
   bool _isLoadingTodayScore = false;
@@ -117,7 +117,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     _loadPictures();
     _loadSubmittedRecipes();
     _loadFavoriteRecipesCount(); // 🔥 ADD THIS LINE
-    _loadDiseaseType();
+    _loadPCOSType();
     _loadTodayScore();
     _loadWeeklyScore();
     _loadWeeklyWeightAverage();
@@ -1043,26 +1043,26 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
-  /// Load user's disease type from database
-  Future<void> _loadDiseaseType() async {
+/// Load user's PCOS type from database
+  Future<void> _loadPCOSType() async {
     if (!mounted) return;
     
     try {
       final userId = AuthService.currentUserId;
       if (userId == null) return;
       
-      final diseaseType = await ProfileService.getDiseaseType(userId);
+      final pcosType = await ProfileService.getPCOSType(userId);
       
       if (mounted) {
         setState(() {
-          _currentDiseaseType = diseaseType ?? 'Other (default scoring)';
+          _currentPCOSType = pcosType ?? 'Other (default scoring)';
         });
       }
     } catch (e) {
-      AppConfig.debugPrint('⚠️ Error loading disease type: $e');
+      AppConfig.debugPrint('⚠️ Error loading PCOS type: $e');
       if (mounted) {
         setState(() {
-          _currentDiseaseType = 'Other (default scoring)';
+          _currentPCOSType = 'Other (default scoring)';
         });
       }
     }
@@ -2943,7 +2943,7 @@ PremiumGate(
   ),
 ),
 
-// Disease Type Selection
+// PCOS Type Selection
 _sectionContainer(
   child: Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2953,7 +2953,7 @@ _sectionContainer(
           const Icon(Icons.medical_services, color: Colors.green, size: 24),
           const SizedBox(width: 8),
           const Text(
-            'Liver Disease Type',
+            'PCOS Type',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -2963,8 +2963,8 @@ _sectionContainer(
       ),
       const SizedBox(height: 16),
       
-      DiseaseTypeSelector(
-        currentValue: _currentDiseaseType ?? 'Other (default scoring)',
+      PCOSTypeSelector(
+        currentValue: _currentPCOSType ?? 'Other (default scoring)',
         onChanged: (String newType) async {
           try {
             final userId = AuthService.currentUserId;
@@ -2973,22 +2973,22 @@ _sectionContainer(
             setState(() => _isLoading = true);
             
             // Update in database
-            await ProfileService.updateDiseaseType(userId, newType);
+            await ProfileService.updatePCOSType(userId, newType);
             
             // Update local state
             if (mounted) {
               setState(() {
-                _currentDiseaseType = newType;
+                _currentPCOSType = newType;
                 _isLoading = false;
               });
               
-              // Reload health scores with new disease type
+              // Reload health scores with new PCOS type
               await _loadTodayScore();
               await _loadWeeklyScore();
               
               ErrorHandlingService.showSuccess(
                 context,
-                'Disease type updated. Scores recalculated.',
+                'PCOS type updated. Scores recalculated.',
               );
             }
           } catch (e) {
@@ -2999,13 +2999,13 @@ _sectionContainer(
                 context: context,
                 error: e,
                 category: ErrorHandlingService.databaseError,
-                customMessage: 'Failed to update disease type',
+                customMessage: 'Failed to update PCOS type',
                 onRetry: () async {
                   final userId = AuthService.currentUserId;
                   if (userId == null) return;
-                  await ProfileService.updateDiseaseType(userId, newType);
+                  await ProfileService.updatePCOSType(userId, newType);
                   if (mounted) {
-                    setState(() => _currentDiseaseType = newType);
+                    setState(() => _currentPCOSType = newType);
                     await _loadTodayScore();
                     await _loadWeeklyScore();
                   }
@@ -3031,7 +3031,7 @@ _sectionContainer(
           const Icon(Icons.favorite, color: Colors.red, size: 24),
           const SizedBox(width: 8),
           const Text(
-            'Your Health Scores',
+            'Your PCOS Health Scores',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -3100,7 +3100,7 @@ _sectionContainer(
                 ),
               ),
             ] else ...[
-              LiverHealthBar(healthScore: _todayScore!),
+              PCOSHealthBar(healthScore: _todayScore!),
             ],
           ],
         ),
@@ -3151,7 +3151,7 @@ _sectionContainer(
                 ),
               ),
             ] else ...[
-              LiverHealthBar(healthScore: _weeklyScore!),
+              PCOSHealthBar(healthScore: _weeklyScore!),
               const SizedBox(height: 8),
               Text(
                 'Based on your last 7 days of tracking',

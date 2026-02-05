@@ -128,29 +128,29 @@ class ProfileService {
   }
 
   // ==================================================
-  // 🆕 DISEASE TYPE MANAGEMENT
+  // 🆕 PCOS TYPE MANAGEMENT
   // ==================================================
 
-  /// Get user's liver disease type
-  static Future<String?> getDiseaseType(String userId) async {
+  /// Get user's PCOS type
+  static Future<String?> getPCOSType(String userId) async {
     try {
       final profile = await getUserProfile(userId);
-      return profile?['liver_disease_type'] as String?;
+      return profile?['pcos_type'] as String?;
     } catch (e) {
-      AppConfig.debugPrint('Error getting disease type: $e');
+      AppConfig.debugPrint('Error getting PCOS type: $e');
       return null;
     }
   }
 
-  /// Update user's liver disease type
-  static Future<void> updateDiseaseType(String userId, String diseaseType) async {
+  /// Update user's PCOS type
+  static Future<void> updatePCOSType(String userId, String pcosType) async {
     try {
       await DatabaseServiceCore.workerQuery(
         action: 'update',
         table: 'user_profiles',
         filters: {'id': userId},
         data: {
-          'liver_disease_type': diseaseType,
+          'pcos_type': pcosType,
           'updated_at': DateTime.now().toIso8601String(),
         },
       );
@@ -159,18 +159,18 @@ class ProfileService {
       await DatabaseServiceCore.clearCache('cache_user_profile_$userId');
       await DatabaseServiceCore.clearCache('cache_profile_timestamp_$userId');
       
-      AppConfig.debugPrint('✅ Disease type updated to: $diseaseType');
+      AppConfig.debugPrint('✅ PCOS type updated to: $pcosType');
     } catch (e) {
-      AppConfig.debugPrint('❌ Error updating disease type: $e');
-      throw Exception('Failed to update disease type: $e');
+      AppConfig.debugPrint('❌ Error updating PCOS type: $e');
+      throw Exception('Failed to update PCOS type: $e');
     }
   }
 
-  /// Get current user's disease type
-  static Future<String?> getCurrentDiseaseType() async {
+  /// Get current user's PCOS type
+  static Future<String?> getCurrentPCOSType() async {
     final userId = DatabaseServiceCore.currentUserId;
     if (userId == null) return null;
-    return getDiseaseType(userId);
+    return getPCOSType(userId);
   }
 
   // ==================================================

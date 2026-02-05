@@ -9,14 +9,14 @@ import 'package:polywise/polyhealthbar.dart';
 class NutritionFactsLabel extends StatelessWidget {
   final NutritionInfo nutrition;
   final int? servings;
-  final bool showLiverScore;
+  final bool showPCOSScore;
   final bool compact;
 
   const NutritionFactsLabel({
     super.key,
     required this.nutrition,
     this.servings,
-    this.showLiverScore = true,
+    this.showPCOSScore = true,
     this.compact = false,
   });
 
@@ -83,13 +83,13 @@ class NutritionFactsLabel extends StatelessWidget {
             // Footer
             _buildFooter(),
             
-            // Liver Health Score
-            if (showLiverScore) ...[
+            // PCOS Health Score
+            if (showPCOSScore) ...[
               const SizedBox(height: 16),
               const Divider(thickness: 2, color: Colors.black),
               const SizedBox(height: 12),
-              LiverHealthBar(
-                healthScore: nutrition.calculateLiverScore(),
+              PCOSHealthBar(
+                healthScore: nutrition.calculatePCOSScore(),
               ),
             ],
           ],
@@ -195,10 +195,8 @@ class NutritionFactsLabel extends StatelessWidget {
         // Saturated Fat (indented)
         _buildIndentedNutrient(
           'Saturated Fat',
-          '${nutrition.saturatedFat?.toStringAsFixed(1) ?? '0'}g',
-          nutrition.saturatedFat != null 
-            ? _calculateDV(nutrition.saturatedFat!, 20) 
-            : null,
+          '${nutrition.saturatedFat.toStringAsFixed(1)}g',
+          _calculateDV(nutrition.saturatedFat, 20),
           'MACRO',
         ),
         

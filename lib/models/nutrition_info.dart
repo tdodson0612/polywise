@@ -1,6 +1,8 @@
 // lib/models/nutrition_info.dart - COMPLETE VERSION
 import 'dart:convert';
 import 'package:polywise/polyhealthbar.dart';
+import 'package:polywise/models/pcos_type_nutrition_profile.dart';
+
 
 class NutritionInfo {
   final String productName;
@@ -503,17 +505,21 @@ class NutritionInfo {
     return '100g';
   }
 
-  /// Calculate liver health score for this nutrition info
-  int calculateLiverScore({String? diseaseType}) {
-    return LiverHealthCalculator.calculate(
+  /// Calculate PCOS health score for this nutrition info
+  int calculatePCOSScore({String? pcosType}) {
+    return PCOSHealthCalculator.calculate(
       fat: fat,
       sodium: sodium,
       sugar: sugar,
       calories: calories,
-      diseaseType: diseaseType,
+      pcosType: pcosType,
       protein: protein,
       fiber: fiber,
       saturatedFat: saturatedFat,
+      monounsaturatedFat: monounsaturatedFat,
+      polyunsaturatedFat: polyunsaturatedFat,
+      transFat: transFat,
+      carbs: carbs,
     );
   }
 

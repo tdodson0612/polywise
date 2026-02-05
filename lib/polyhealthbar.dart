@@ -1,7 +1,7 @@
 // lib/polyhealthbar.dart
 
 import 'package:flutter/material.dart';
-import '../models/disease_nutrition_profile.dart';
+import 'models/pcos_type_nutrition_profile.dart';
 
 // PolyWise Brand Palette for the UI
 const Color kPolyWiseTeal = Color(0xFF2FB4C1);
@@ -22,12 +22,16 @@ class PCOSHealthCalculator {
     required double sodium,
     required double sugar,
     required double calories,
-    String? diseaseType,
+    String? pcosType,
     double? protein,
     double? fiber,
     double? saturatedFat,
+    double? monounsaturatedFat,
+    double? polyunsaturatedFat,
+    double? transFat,
+    double? carbs,
   }) {
-    if (diseaseType == null || diseaseType == 'Other (default scoring)' || diseaseType == 'General PCOS') {
+    if (pcosType == null || pcosType == 'Other (default scoring)') {
       
       // PCOS Optimization Thresholds (per serving/100g logic)
       const sugarLimit = 12.0;    // Penalize heavily over 12g
@@ -60,9 +64,8 @@ class PCOSHealthCalculator {
       return (finalScore * 100).round().clamp(0, 100);
     } else {
       // Use PCOS subtype-specific calculation (Insulin Resistant, Inflammatory, etc.)
-      // This refers to your central model logic.
-      return DiseaseNutritionProfile.calculateDiseaseScore(
-        diseaseType: diseaseType,
+      return PCOSTypeNutritionProfile.calculatePCOSScore(
+        pcosType: pcosType,
         fat: fat,
         sodium: sodium,
         sugar: sugar,
@@ -70,6 +73,10 @@ class PCOSHealthCalculator {
         protein: protein,
         fiber: fiber,
         saturatedFat: saturatedFat,
+        monounsaturatedFat: monounsaturatedFat,
+        polyunsaturatedFat: polyunsaturatedFat,
+        transFat: transFat,
+        carbs: carbs,
       );
     }
   }
@@ -87,20 +94,28 @@ class PCOSHealthBar extends StatelessWidget {
     required double sodium,
     required double sugar,
     required double calories,
-    String? diseaseType,
+    String? pcosType,
     double? protein,
     double? fiber,
     double? saturatedFat,
+    double? monounsaturatedFat,
+    double? polyunsaturatedFat,
+    double? transFat,
+    double? carbs,
   }) {
     return PCOSHealthCalculator.calculate(
       fat: fat,
       sodium: sodium,
       sugar: sugar,
       calories: calories,
-      diseaseType: diseaseType,
+      pcosType: pcosType,
       protein: protein,
       fiber: fiber,
       saturatedFat: saturatedFat,
+      monounsaturatedFat: monounsaturatedFat,
+      polyunsaturatedFat: polyunsaturatedFat,
+      transFat: transFat,
+      carbs: carbs,
     );
   }
 
