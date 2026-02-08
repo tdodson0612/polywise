@@ -290,7 +290,7 @@ class _Sprint1TestPageState extends State<Sprint1TestPage>
                   const SizedBox(height: 12),
                   _buildNutritionGrid(result.nutrition!),
                   const SizedBox(height: 12),
-                  _buildLiverScore(result.nutrition!),
+                  _buildpolyScore(result.nutrition!),
                 ] else ...[
                   const Text(
                     'No nutrition data available',
@@ -358,8 +358,8 @@ class _Sprint1TestPageState extends State<Sprint1TestPage>
     );
   }
 
-  Widget _buildLiverScore(NutritionInfo nutrition) {
-    final score = nutrition.calculateLiverScore();
+  Widget _buildpolyScore(NutritionInfo nutrition) {
+    final score = nutrition.calculatepolyScore();
     final color = score >= 70
         ? Colors.green
         : score >= 40
@@ -378,7 +378,7 @@ class _Sprint1TestPageState extends State<Sprint1TestPage>
           Icon(Icons.favorite, color: color, size: 20),
           const SizedBox(width: 8),
           Text(
-            'Liver Health Score: $score/100',
+            'poly Health Score: $score/100',
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.bold,

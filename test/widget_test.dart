@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:polywise/main.dart';
 
 void main() {
-  testWidgets('Liver health bar renders with emoji', (WidgetTester tester) async {
+  testWidgets('poly health bar renders with emoji', (WidgetTester tester) async {
     // Build the app
     await tester.pumpWidget(const MyApp());
 

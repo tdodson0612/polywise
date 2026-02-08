@@ -1,7 +1,7 @@
 // lib/widgets/recipe_nutrition_display.dart - UPDATED: Standardized macro/micro format
 import 'package:flutter/material.dart';
 import 'package:polywise/services/recipe_nutrition_service.dart';
-import 'package:polywise/polyhealthbar.dart';
+import 'package:polywise/PCOSHealthBar.dart';
 
 class RecipeNutritionDisplay extends StatelessWidget {
   final RecipeNutrition nutrition;
@@ -145,9 +145,9 @@ class RecipeNutritionDisplay extends StatelessWidget {
             const SizedBox(height: 20),
             const Divider(thickness: 2),
             
-            // Liver health score
+            // poly health score
             const SizedBox(height: 12),
-            LiverHealthBar(healthScore: nutrition.liverScore),
+            PCOSHealthBar(healthScore: nutrition.polyScore),
           ],
         ),
       ),

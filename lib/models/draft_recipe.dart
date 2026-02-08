@@ -3,7 +3,7 @@
 // iOS 14 Compatible | Production Ready | Uses NutritionInfo
 
 import 'nutrition_info.dart';
-import '../polyhealthbar.dart';
+import '../PCOSHealthBar.dart';
 
 class DraftRecipe {
   final String? id; // UUID from database
@@ -17,7 +17,7 @@ class DraftRecipe {
   final int servings;
   final NutritionInfo? totalNutrition; // Auto-calculated
   final String? imageUrl;
-  final bool isLiverFriendly;
+  final bool ispolyFriendly;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -33,7 +33,7 @@ class DraftRecipe {
     this.servings = 1,
     this.totalNutrition,
     this.imageUrl,
-    this.isLiverFriendly = true,
+    this.ispolyFriendly = true,
     DateTime? createdAt,
     DateTime? updatedAt,
   })  : createdAt = createdAt ?? DateTime.now(),
@@ -73,7 +73,7 @@ class DraftRecipe {
       servings: json['servings'] as int? ?? 1,
       totalNutrition: nutrition,
       imageUrl: json['image_url'] as String?,
-      isLiverFriendly: json['is_liver_friendly'] as bool? ?? true,
+      ispolyFriendly: json['is_poly_friendly'] as bool? ?? true,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),
@@ -99,7 +99,7 @@ class DraftRecipe {
       'servings': servings,
       'total_nutrition': totalNutrition?.toJson(),
       'image_url': imageUrl,
-      'is_liver_friendly': isLiverFriendly,
+      'is_poly_friendly': ispolyFriendly,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -120,7 +120,7 @@ class DraftRecipe {
     int? servings,
     NutritionInfo? totalNutrition,
     String? imageUrl,
-    bool? isLiverFriendly,
+    bool? ispolyFriendly,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -136,7 +136,7 @@ class DraftRecipe {
       servings: servings ?? this.servings,
       totalNutrition: totalNutrition ?? this.totalNutrition,
       imageUrl: imageUrl ?? this.imageUrl,
-      isLiverFriendly: isLiverFriendly ?? this.isLiverFriendly,
+      ispolyFriendly: ispolyFriendly ?? this.ispolyFriendly,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -170,7 +170,7 @@ class DraftRecipe {
   /// Get health score from nutrition
   int get healthScore {
     if (totalNutrition == null) return 0;
-    return totalNutrition!.calculateLiverScore();
+    return totalNutrition!.calculatepolyScore();
   }
 
   @override

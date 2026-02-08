@@ -1,4 +1,4 @@
-// lib/polyhealthbar.dart
+// lib/PCOSHealthBar.dart
 
 import 'package:flutter/material.dart';
 import 'models/pcos_type_nutrition_profile.dart';

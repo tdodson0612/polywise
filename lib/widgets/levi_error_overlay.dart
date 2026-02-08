@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 
-///Pauliethe liver character showing error messages in a cute way
+///Pauliethe poly character showing error messages in a cute way
 class LeviErrorOverlay extends StatefulWidget {
   final String title;
   final String message;
@@ -111,7 +111,7 @@ class _LeviErrorOverlayState extends State<LeviErrorOverlay>
                         ),
                         child: ClipOval(
                           child: Image.asset(
-                            'assets/leviliver.png',
+                            'assets/levipoly.png',
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return Icon(

@@ -20,7 +20,7 @@ class AuthService {
 
   static const List<String> _premiumEmails = [
     'terryd0612@gmail.com',
-    'liverdiseasescanner@gmail.com',
+    'polydiseasescanner@gmail.com',
   ];
 
   static bool get isLoggedIn => _supabase.auth.currentUser != null;

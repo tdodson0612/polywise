@@ -3,7 +3,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/tracker_entry.dart';
-import '../polyhealthbar.dart';
+import '../PolyHealthBar.dart';
 import '../config/app_config.dart';
 
 class TrackerService {

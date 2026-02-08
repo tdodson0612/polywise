@@ -3,7 +3,7 @@
 // iOS 14 Compatible | Production Ready
 
 import 'package:polywise/models/nutrition_info.dart';
-import 'package:polywise/polyhealthbar.dart';
+import 'package:polywise/PolyHealthBar.dart';
 
 class RecipeNutrition {
   final double calories;
@@ -20,7 +20,7 @@ class RecipeNutrition {
   final double iron;
   final double cholesterol;
   final double cobalt;
-  final int liverScore;
+  final int polyScore;
 
   RecipeNutrition({
     required this.calories,
@@ -37,7 +37,7 @@ class RecipeNutrition {
     this.iron = 0.0,
     this.cholesterol = 0.0,
     this.cobalt = 0.0,
-    required this.liverScore,
+    required this.polyScore,
   });
 
   /// Calculate macronutrient percentages
@@ -130,8 +130,8 @@ class RecipeNutritionService {
       totalCobalt += item.cobalt ?? 0.0;
     }
 
-    // Compute recipe liver score
-    final int liverScore = LiverHealthCalculator.calculate(
+    // Compute recipe poly score
+    final int polyScore = PCOSHealthCalculator.calculate(
       fat: totalFat,
       sodium: totalSodium,
       sugar: totalSugar,
@@ -156,7 +156,7 @@ class RecipeNutritionService {
       iron: totalIron,
       cholesterol: totalCholesterol,
       cobalt: totalCobalt,
-      liverScore: liverScore,
+      polyScore: polyScore,
     );
   }
 
@@ -186,7 +186,7 @@ class RecipeNutritionService {
       iron: totals.iron / servings,
       cholesterol: totals.cholesterol / servings,
       cobalt: totals.cobalt / servings,
-      liverScore: totals.liverScore, // Liver score doesn't change per serving
+      polyScore: totals.polyScore, // poly score doesn't change per serving
     );
   }
 
@@ -239,8 +239,8 @@ class RecipeNutritionService {
     if (isKeto(nutrition)) {
       labels.add('Keto');
     }
-    if (nutrition.liverScore >= 75) {
-      labels.add('Liver Friendly');
+    if (nutrition.polyScore >= 75) {
+      labels.add('poly Friendly');
     }
 
     return labels.isEmpty ? 'Balanced' : labels.join(', ');

@@ -25,15 +25,15 @@ class RecipeComplianceService {
         errors.add('Recipe missing complete nutrition data');
       }
 
-      // 2. Liver Safety Check
+      // 2. poly Safety Check
       int? healthScore;
-      bool isLiverSafe = true;
+      bool ispolySafe = true;
 
       if (recipe.totalNutrition != null) {
         healthScore = recipe.healthScore;
         
         if (healthScore < 50) {
-          isLiverSafe = false;
+          ispolySafe = false;
           warnings.add('Recipe has low health score ($healthScore/100)');
         }
 
@@ -49,7 +49,7 @@ class RecipeComplianceService {
           warnings.add('Very high fat content (${nutrition.fat.toStringAsFixed(0)}g)');
         }
       } else {
-        isLiverSafe = false;
+        ispolySafe = false;
         warnings.add('Cannot calculate health score - missing nutrition data');
       }
 
@@ -69,7 +69,7 @@ class RecipeComplianceService {
 
       return ComplianceReport(
         hasCompleteNutrition: hasNutrition,
-        isLiverSafe: isLiverSafe,
+        ispolySafe: ispolySafe,
         contentAppropriate: contentOk,
         healthScore: healthScore,
         warnings: warnings,
@@ -79,7 +79,7 @@ class RecipeComplianceService {
       AppConfig.debugPrint('❌ Error checking compliance: $e');
       return ComplianceReport(
         hasCompleteNutrition: false,
-        isLiverSafe: false,
+        ispolySafe: false,
         contentAppropriate: false,
         errors: ['Error running compliance checks: $e'],
       );
@@ -99,8 +99,8 @@ class RecipeComplianceService {
            nutrition.sugar >= 0;
   }
 
-  /// Check if recipe is liver-safe
-  static bool checkIsLiverSafe(DraftRecipe recipe) {
+  /// Check if recipe is poly-safe
+  static bool checkIspolySafe(DraftRecipe recipe) {
     if (recipe.totalNutrition == null) return false;
     
     final healthScore = recipe.healthScore;

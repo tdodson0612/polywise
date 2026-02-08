@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 enum TutorialStep {
   TUTORIAL_INTRO,
-  TUTORIAL_ALL_BUTTONS, // NEW: Show all 4 buttons together
+  TUTORIAL_ALL_BUTTONS, // Show all 4 buttons together
   TUTORIAL_AUTO,
   TUTORIAL_SCAN,
   TUTORIAL_MANUAL,
@@ -35,45 +35,45 @@ class TutorialOverlay extends StatefulWidget {
 class _TutorialOverlayState extends State<TutorialOverlay>
     with SingleTickerProviderStateMixin {
   TutorialStep _currentStep = TutorialStep.TUTORIAL_INTRO;
-  late AnimationController _leviController;
-  late Animation<Offset> _leviSlideAnimation;
+  late AnimationController _paullieController;
+  late Animation<Offset> _paullieSlideAnimation;
   
   bool _showHighlight = false;
   GlobalKey? _currentHighlightKey;
-  double _leviOffset = 0.0;
+  double _paullieOffset = 0.0;
   
-  // NEW: For highlighting all buttons together
+  // For highlighting all buttons together
   bool _highlightAllButtons = false;
   
   @override
   void initState() {
     super.initState();
     
-    _leviController = AnimationController(
+    _paullieController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
     
-    _leviSlideAnimation = Tween<Offset>(
+    _paullieSlideAnimation = Tween<Offset>(
       begin: const Offset(1.5, 0),
       end: Offset.zero,
     ).animate(CurvedAnimation(
-      parent: _leviController,
+      parent: _paullieController,
       curve: Curves.easeOut,
     ));
     
-    _leviController.forward();
+    _paullieController.forward();
   }
   
   @override
   void dispose() {
-    _leviController.dispose();
+    _paullieController.dispose();
     super.dispose();
   }
   
   void _nextStep() {
     print('🎓 _nextStep called - current: $_currentStep');
-    _playLeviHop();
+    _playPaullieHop();
     setState(() {
       switch (_currentStep) {
         case TutorialStep.TUTORIAL_INTRO:
@@ -121,13 +121,13 @@ class _TutorialOverlayState extends State<TutorialOverlay>
     });
   }
 
-  void _playLeviHop() async {
+  void _playPaullieHop() async {
     if (!mounted) return;
     
     for (int i = 0; i < 3; i++) {
-      setState(() => _leviOffset = -20.0);
+      setState(() => _paullieOffset = -20.0);
       await Future.delayed(Duration(milliseconds: 150));
-      setState(() => _leviOffset = 0.0);
+      setState(() => _paullieOffset = 0.0);
       await Future.delayed(Duration(milliseconds: 150));
     }
   }
@@ -138,7 +138,7 @@ class _TutorialOverlayState extends State<TutorialOverlay>
     // Fade out previous highlight
     setState(() {
       _showHighlight = false;
-      _highlightAllButtons = false; // Also turn off all-buttons highlight
+      _highlightAllButtons = false;
     });
     await Future.delayed(const Duration(milliseconds: 200));
     
@@ -177,9 +177,9 @@ class _TutorialOverlayState extends State<TutorialOverlay>
   String _getTalkBubbleText() {
     switch (_currentStep) {
       case TutorialStep.TUTORIAL_INTRO:
-        return "Hi there, friend. I am Levi, the liver. Let me walk you through this app and the way we use it to enrich our health and our lives.";
+        return "Hi there, friend! I'm Paullie the Ovary. Let me walk you through this app and show you how we use it to support your PCOS health journey.";
       case TutorialStep.TUTORIAL_ALL_BUTTONS:
-        return "These buttons are the 4 different ways you can see the nutrition facts and suggested liver friendly recipes for any food you like! Let's walk through them together!";
+        return "These buttons are the 4 different ways you can see nutrition facts and suggested PCOS-friendly recipes for any food you like! Let's walk through them together!";
       case TutorialStep.TUTORIAL_AUTO:
         return "Let's start with Auto. It works fast - just point your camera at the barcode, and it recognizes it automatically.";
       case TutorialStep.TUTORIAL_SCAN:
@@ -191,11 +191,11 @@ class _TutorialOverlayState extends State<TutorialOverlay>
       case TutorialStep.TUTORIAL_UNIFIED_RESULT:
         return "No matter which option you choose, you'll see nutrition facts and recipe suggestions for that item. Pick what works best for you.";
       case TutorialStep.TUTORIAL_CLOSE:
-        return "That's it! I'll be here if you need help. Let's take care of your health together.";
+        return "That's it! I'll be here if you need help. Let's take care of your PCOS health together!";
     }
   }
   
-  // NEW: Build highlight for all 4 buttons together
+  // Build highlight for all 4 buttons together
   Widget _buildAllButtonsHighlight() {
     if (!_highlightAllButtons) {
       return const SizedBox.shrink();
@@ -334,16 +334,17 @@ class _TutorialOverlayState extends State<TutorialOverlay>
               // Yellow highlight for individual button
               _buildHighlight(),
               
+              // Paullie the Ovary character
               Positioned(
                 right: 16,
-                bottom: 140 + _leviOffset,
+                bottom: 140 + _paullieOffset,
                 child: SlideTransition(
-                  position: _leviSlideAnimation,
+                  position: _paullieSlideAnimation,
                   child: Container(
                     width: 120,
                     height: 120,
                     decoration: BoxDecoration(
-                      color: Colors.green.shade700,
+                      color: Colors.pink.shade300,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
@@ -356,23 +357,23 @@ class _TutorialOverlayState extends State<TutorialOverlay>
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(16),
                       child: Image.asset(
-                        'assets/leviliver.png',
+                        'assets/paullie_ovary.png',
                         width: 120,
                         height: 120,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
-                          print('❌ Error loading leviliver.png: $error');
-                          // Fallback to a liver emoji/icon
+                          print('❌ Error loading paullie_ovary.png: $error');
+                          // Fallback to an ovary emoji/icon
                           return Container(
                             width: 120,
                             height: 120,
                             decoration: BoxDecoration(
-                              color: Colors.green.shade700,
+                              color: Colors.pink.shade300,
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Center(
                               child: Text(
-                                '🫀',
+                                '🌸',
                                 style: TextStyle(fontSize: 60),
                               ),
                             ),

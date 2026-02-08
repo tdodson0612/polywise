@@ -16,7 +16,7 @@ import '../widgets/cookbook_section.dart';
 
 import '../widgets/pcos_type_selector.dart';
 import '../services/tracker_service.dart';
-import '../polyhealthbar.dart';
+import '../PCOSHealthBar.dart';
 
 // 🔥 NEW — listens to refresh_profile events
 import 'package:polywise/services/profile_events.dart';
@@ -2111,7 +2111,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: const SpolyGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
                 crossAxisSpacing: 8,
                 mainAxisSpacing: 8,
@@ -2683,7 +2683,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                const SpolyGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 3,
                               childAspectRatio: 0.8,
                               crossAxisSpacing: 8,

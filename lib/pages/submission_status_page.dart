@@ -342,7 +342,7 @@ class _SubmissionStatusPageState extends State<SubmissionStatusPage> {
       children: [
         _buildComplianceIcon(report.hasCompleteNutrition, 'Nutrition'),
         const SizedBox(width: 12),
-        _buildComplianceIcon(report.isLiverSafe, 'Liver Safe'),
+        _buildComplianceIcon(report.ispolySafe, 'poly Safe'),
         const SizedBox(width: 12),
         _buildComplianceIcon(report.contentAppropriate, 'Content'),
         if (report.healthScore != null) ...[
@@ -488,8 +488,8 @@ class _SubmissionStatusPageState extends State<SubmissionStatusPage> {
           report.hasCompleteNutrition,
         ),
         _buildComplianceCheckTile(
-          'Liver-Safe (Score: ${report.healthScore ?? 'N/A'})',
-          report.isLiverSafe,
+          'poly-Safe (Score: ${report.healthScore ?? 'N/A'})',
+          report.ispolySafe,
         ),
         _buildComplianceCheckTile(
           'Content Appropriate',

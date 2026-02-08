@@ -18,7 +18,10 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      return web;
+      throw UnsupportedError(
+        'DefaultFirebaseOptions have not been configured for web - '
+        'you can reconfigure this by running the FlutterFire CLI again.',
+      );
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -26,9 +29,15 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        return macos;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for macos - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.windows:
-        return windows;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for windows - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -41,47 +50,20 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyAMPrQsU0ztTgBkwBHeC9whJCV1DAFfti0',
-    appId: '1:557404820558:web:d559e7b7ee635f39a7df1f',
-    messagingSenderId: '557404820558',
-    projectId: 'polywise-push',
-    authDomain: 'polywise-push.firebaseapp.com',
-    storageBucket: 'polywise-push.firebasestorage.app',
-  );
-
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDnM7d_oAm7uIwJDsAuJMxmcVkOXtA2H-s',
-    appId: '1:557404820558:android:9dd96da1e2bec5d2a7df1f',
-    messagingSenderId: '557404820558',
-    projectId: 'polywise-push',
-    storageBucket: 'polywise-push.firebasestorage.app',
+    apiKey: 'AIzaSyBrxXJD9VqcQ7fvruXmYjTHNp0EqJaOC2o',
+    appId: '1:186814835320:android:8361bc12cc51d77c541b8d',
+    messagingSenderId: '186814835320',
+    projectId: 'polywise-app',
+    storageBucket: 'polywise-app.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDQF9cEs5VolO9l3QfK__3T2dg_XlLk_gk',
-    appId: '1:557404820558:ios:b708f1dd74ed90cea7df1f',
-    messagingSenderId: '557404820558',
-    projectId: 'polywise-push',
-    storageBucket: 'polywise-push.firebasestorage.app',
-    iosBundleId: 'com.terrydodson.polywiseApp',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDQF9cEs5VolO9l3QfK__3T2dg_XlLk_gk',
-    appId: '1:557404820558:ios:2cec2675fb4b2c42a7df1f',
-    messagingSenderId: '557404820558',
-    projectId: 'polywise-push',
-    storageBucket: 'polywise-push.firebasestorage.app',
-    iosBundleId: 'com.example.barcodeScannerApp',
-  );
-
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyAMPrQsU0ztTgBkwBHeC9whJCV1DAFfti0',
-    appId: '1:557404820558:web:e6fad76ec56df9b3a7df1f',
-    messagingSenderId: '557404820558',
-    projectId: 'polywise-push',
-    authDomain: 'polywise-push.firebaseapp.com',
-    storageBucket: 'polywise-push.firebasestorage.app',
+    apiKey: 'AIzaSyAXp6Epnb07Dy2Qn6H3Wp6pGm6482TrPKM',
+    appId: '1:186814835320:ios:f39f19a1dc09b4d0541b8d',
+    messagingSenderId: '186814835320',
+    projectId: 'polywise-app',
+    storageBucket: 'polywise-app.firebasestorage.app',
+    iosBundleId: 'com.terrydodson.polyWiseApp',
   );
 }

@@ -347,7 +347,7 @@ class _CookbookSectionState extends State<CookbookSection> {
         NutritionFactsLabel(
           nutrition: recipe.nutrition!,
           servings: recipe.servings,
-          showLiverScore: true,
+          showpolyScore: true,
         ),
         
         const SizedBox(height: 16),

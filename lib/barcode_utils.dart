@@ -53,7 +53,7 @@ Future<String> fetchNutritionInfo(String barcode) async {
   }
 }
 
-int calculateLiverHealthScore({
+int calculatepolyHealthScore({
   required double fat,
   required double sodium,
   required double sugar,

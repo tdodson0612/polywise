@@ -180,7 +180,7 @@ class _AppDrawerState extends State<AppDrawer> with WidgetsBindingObserver {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Liver Food Scanner',
+                    'poly Food Scanner',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 20,

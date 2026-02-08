@@ -1,7 +1,7 @@
 // test/recipe_generator_test.dart - FIXED VERSION
 import 'package:flutter_test/flutter_test.dart';
 import 'package:polywise/home_screen.dart';
-import 'package:polywise/polyhealthbar.dart';
+import 'package:polywise/PCOSHealthBar.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -202,9 +202,9 @@ void main() {
     });
   });
 
-  group('LiverHealthBar.calculateScore', () {
+  group('PCOSHealthBar.calculateScore', () {
     test('Returns 100 for zero values', () {
-      final score = LiverHealthBar.calculateScore(
+      final score = PCOSHealthBar.calculateScore(
         fat: 0, 
         sodium: 0, 
         sugar: 0, 
@@ -214,7 +214,7 @@ void main() {
     });
 
     test('Returns 0 for extremely high values', () {
-      final score = LiverHealthBar.calculateScore(
+      final score = PCOSHealthBar.calculateScore(
         fat: 1000, 
         sodium: 10000, 
         sugar: 500, 
@@ -224,14 +224,14 @@ void main() {
     });
 
     test('Produces lower score when inputs increase', () {
-      final lowScore = LiverHealthBar.calculateScore(
+      final lowScore = PCOSHealthBar.calculateScore(
         fat: 2, 
         sodium: 50, 
         sugar: 2, 
         calories: 50,
       );
       
-      final highScore = LiverHealthBar.calculateScore(
+      final highScore = PCOSHealthBar.calculateScore(
         fat: 10, 
         sodium: 200, 
         sugar: 10, 
@@ -242,7 +242,7 @@ void main() {
     });
 
     test('Returns value between 0 and 100', () {
-      final score = LiverHealthBar.calculateScore(
+      final score = PCOSHealthBar.calculateScore(
         fat: 5, 
         sodium: 100, 
         sugar: 5, 
@@ -255,7 +255,7 @@ void main() {
 
     test('Handles typical food values correctly', () {
       // Example: Apple (per 100g)
-      final appleScore = LiverHealthBar.calculateScore(
+      final appleScore = PCOSHealthBar.calculateScore(
         fat: 0.3,
         sodium: 1,
         sugar: 10,
@@ -265,7 +265,7 @@ void main() {
       expect(appleScore, greaterThan(70));
       
       // Example: Potato chips (per 100g)
-      final chipsScore = LiverHealthBar.calculateScore(
+      final chipsScore = PCOSHealthBar.calculateScore(
         fat: 35,
         sodium: 500,
         sugar: 1,

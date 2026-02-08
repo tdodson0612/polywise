@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "557404820558",
-    "project_id": "PolyWise-push",
-    "storage_bucket": "PolyWise-push.firebasestorage.app"
+    "project_number": "186814835320",
+    "project_id": "polywise-app",
+    "storage_bucket": "polywise-app.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:557404820558:android:9dd96da1e2bec5d2a7df1f",
+        "mobilesdk_app_id": "1:186814835320:android:8361bc12cc51d77c541b8d",
         "android_client_info": {
           "package_name": "com.wiseapps.PolyWise"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDnM7d_oAm7uIwJDsAuJMxmcVkOXtA2H-s"
+          "current_key": "AIzaSyBrxXJD9VqcQ7fvruXmYjTHNp0EqJaOC2o"
         }
       ],
       "services": {

@@ -452,7 +452,7 @@ class _ContactScreenState extends State<ContactScreen> {
                         ),
                       ),                
                       const SizedBox(height: 10),
-                      _buildContactRow(Icons.email, 'liverdiseasescanner@gmail.com'),                     
+                      _buildContactRow(Icons.email, 'polydiseasescanner@gmail.com'),                     
                     ],
                   ),
                 ),

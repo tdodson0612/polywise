@@ -15,7 +15,7 @@ import 'package:polywise/widgets/add_to_cookbook_button.dart';
 import 'package:polywise/models/nutrition_info.dart';
 import 'package:polywise/widgets/premium_gate.dart';
 import 'package:polywise/controllers/premium_gate_controller.dart';
-import 'package:polywise/polyhealthbar.dart';
+import 'package:polywise/PolyHealthBar.dart';
 import 'package:polywise/services/auth_service.dart';
 import 'package:polywise/services/error_handling_service.dart';
 import 'package:polywise/models/favorite_recipe.dart';
@@ -137,13 +137,13 @@ class RecipeGenerator {
     }
   }
 
-  static List<Recipe> generateSuggestions(int liverHealthScore) {
-    if (liverHealthScore >= 75) {
+  static List<Recipe> generateSuggestions(int polyHealthScore) {
+    if (polyHealthScore >= 75) {
       return _getHealthyRecipes();
-    } else if (liverHealthScore >= 50) {
+    } else if (polyHealthScore >= 50) {
       return _getModerateRecipes();
     } else {
-      return _getDetoxRecipes();
+      return _getBalancingRecipes();
     }
   }
 
@@ -171,16 +171,16 @@ class RecipeGenerator {
         ),
         Recipe(
           title: 'Lentil Soup',
-          description: 'Fiber-rich soup to support liver health',
+          description: 'Fiber-rich soup to support hormonal balance',
           ingredients: ['Red lentils', 'Carrots', 'Celery', 'Onions', 'Vegetable broth'],
           instructions: 'Sauté vegetables, add lentils and broth, simmer until tender.',
         ),
       ];
 
-  static List<Recipe> _getDetoxRecipes() => [
+  static List<Recipe> _getBalancingRecipes() => [
         Recipe(
-          title: 'Green Detox Smoothie',
-          description: 'Liver-cleansing green smoothie',
+          title: 'Green Balance Smoothie',
+          description: 'Hormone-balancing green smoothie',
           ingredients: ['Spinach', 'Green apple', 'Lemon juice', 'Ginger', 'Water'],
           instructions: 'Blend all ingredients until smooth, serve immediately.',
         ),
@@ -275,8 +275,8 @@ class _HomePageState extends State<HomePage>
   List<Map<String, String>> _scannedRecipes = [];
   File? _imageFile;
   String _nutritionText = '';
-  int? _liverHealthScore;
-  bool _showLiverBar = false;
+  int? _polyHealthScore;
+  bool _showPolyBar = false;
   bool _isLoading = false;
   List<Recipe> _recipeSuggestions = [];
   List<FavoriteRecipe> _favoriteRecipes = [];
@@ -858,10 +858,10 @@ class _HomePageState extends State<HomePage>
     setState(() {
       _showInitialView = true;
       _nutritionText = '';
-      _showLiverBar = false;
+      _showPolyBar = false;
       _imageFile = null;
       _recipeSuggestions = [];
-      _liverHealthScore = null;
+      _polyHealthScore = null;
       _isLoading = false;
       _scannedRecipes = [];
       _currentNutrition = null;
@@ -1131,7 +1131,7 @@ class _HomePageState extends State<HomePage>
         setState(() {
           _showInitialView = false;
           _nutritionText = '';
-          _showLiverBar = false;
+          _showPolyBar = false;
           _imageFile = null;
           _recipeSuggestions = [];
           _isLoading = false;
@@ -1172,7 +1172,7 @@ class _HomePageState extends State<HomePage>
           throw Exception(
             'Camera permission denied.\n\n'
             'Please enable camera access in your device Settings:\n'
-            'Settings > Apps > Liver Wise > Permissions > Camera'
+            'Settings > Apps > poly Wise > Permissions > Camera'
           );
         } else if (errorString.contains('no camera available')) {
           throw Exception('No camera found on this device');
@@ -1458,7 +1458,7 @@ class _HomePageState extends State<HomePage>
         setState(() {
           _isLoading = true;
           _nutritionText = '';
-          _showLiverBar = false;
+          _showPolyBar = false;
           _recipeSuggestions = [];
           _keywordTokens = [];
           _selectedKeywords = {};
@@ -1571,7 +1571,7 @@ class _HomePageState extends State<HomePage>
         return;
       }
 
-      final score = LiverHealthCalculator.calculate(
+      final score = PCOSHealthCalculator.calculate(
         fat: nutrition.fat,
         sodium: nutrition.sodium,
         sugar: nutrition.sugar,
@@ -1587,8 +1587,8 @@ class _HomePageState extends State<HomePage>
       if (mounted && !_isDisposed) {
         setState(() {
           _nutritionText = _buildNutritionDisplay(nutrition!);
-          _liverHealthScore = score;
-          _showLiverBar = true;
+          _polyHealthScore = score;
+          _showPolyBar = true;
           _isLoading = false;
           _currentNutrition = nutrition;
         });
@@ -1608,7 +1608,7 @@ class _HomePageState extends State<HomePage>
       if (mounted) {
         setState(() {
           _nutritionText = "Scanning timed out. Please try again.";
-          _showLiverBar = false;
+          _showPolyBar = false;
           _isLoading = false;
         });
 
@@ -1624,7 +1624,7 @@ class _HomePageState extends State<HomePage>
       if (mounted) {
         setState(() {
           _nutritionText = "Error: ${e.toString()}";
-          _showLiverBar = false;
+          _showPolyBar = false;
           _isLoading = false;
         });
 
@@ -4999,8 +4999,8 @@ class _HomePageState extends State<HomePage>
 
             const SizedBox(height: 20),
 
-            if (_showLiverBar && _liverHealthScore != null)
-              LiverHealthBar(healthScore: _liverHealthScore!),
+            if (_showPolyBar && _polyHealthScore != null)
+              PCOSHealthBar(healthScore: _polyHealthScore!),
 
             const SizedBox(height: 20),
 
@@ -5488,7 +5488,7 @@ class _HomePageState extends State<HomePage>
         ingredients: recipeIngredients,
         instructions: recipe.instructions,
         servings: 1,
-        isLiverFriendly: true,
+        ispolyFriendly: true,
       );
 
       // Save to database

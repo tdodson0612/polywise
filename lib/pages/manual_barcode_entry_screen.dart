@@ -6,7 +6,7 @@ import 'package:polywise/models/nutrition_info.dart';
 import 'package:polywise/widgets/nutrition_display.dart';
 import 'package:polywise/services/error_handling_service.dart';
 import '../services/recipe_nutrition_service.dart';
-import '../polyhealthbar.dart';
+import '../PCOSHealthBar.dart';
 
 class ManualBarcodeEntryScreen extends StatefulWidget {
   const ManualBarcodeEntryScreen({super.key});
@@ -141,7 +141,7 @@ class _ManualBarcodeEntryScreenState extends State<ManualBarcodeEntryScreen> {
               if (_nutrition != null)
                 NutritionDisplay(
                   nutrition: _nutrition!,
-                  liverScore: LiverHealthCalculator.calculate(
+                  polyScore: PCOSHealthCalculator.calculate(
                     fat: _nutrition!.fat,
                     sodium: _nutrition!.sodium,
                     sugar: _nutrition!.sugar,

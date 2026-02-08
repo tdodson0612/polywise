@@ -7,7 +7,7 @@ import 'package:polywise/services/nutrition_api_service.dart';
 import 'package:polywise/widgets/nutrition_display.dart';
 import 'package:polywise/services/error_handling_service.dart';
 import 'package:polywise/services/search_history_service.dart';
-import 'package:polywise/polyhealthbar.dart';
+import 'package:polywise/PCOSHealthBar.dart';
 import 'package:polywise/widgets/nutrition_facts_label.dart';
 import 'package:polywise/services/saved_ingredients_service.dart';
 import 'package:polywise/services/grocery_service.dart';
@@ -937,7 +937,7 @@ class _NutritionSearchScreenState extends State<NutritionSearchScreen> {
                               children: [
                                 NutritionDisplay(
                                   nutrition: _selectedItem!,
-                                  liverScore: LiverHealthCalculator.calculate(
+                                  polyScore: PCOSHealthCalculator.calculate(
                                     fat: _selectedItem!.fat,
                                     sodium: _selectedItem!.sodium,
                                     sugar: _selectedItem!.sugar,
@@ -946,8 +946,8 @@ class _NutritionSearchScreenState extends State<NutritionSearchScreen> {
                                   disclaimer: disclaimer,
                                 ),
                                 const SizedBox(height: 16),
-                                LiverHealthBar(
-                                  healthScore: LiverHealthCalculator.calculate(
+                                PCOSHealthBar(
+                                  healthScore: PCOSHealthCalculator.calculate(
                                     fat: _selectedItem!.fat,
                                     sodium: _selectedItem!.sodium,
                                     sugar: _selectedItem!.sugar,
@@ -964,7 +964,7 @@ class _NutritionSearchScreenState extends State<NutritionSearchScreen> {
                               children: [
                                 NutritionFactsLabel(
                                   nutrition: _selectedItem!,
-                                  showLiverScore: true,
+                                  showpolyScore: true,
                                 ),
                                 
                                 const SizedBox(height: 16),

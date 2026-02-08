@@ -10,7 +10,7 @@ import '../services/error_handling_service.dart';
 import '../services/saved_ingredients_service.dart';
 import '../models/tracker_entry.dart';
 import '../models/nutrition_info.dart';
-import '../polyhealthbar.dart';
+import '../PCOSHealthBar.dart';
 import '../config/app_config.dart';
 import '../widgets/premium_gate.dart';
 import '../controllers/premium_gate_controller.dart';
@@ -1126,7 +1126,7 @@ class _TrackerPageState extends State<TrackerPage> {
                 style: TextStyle(color: Colors.grey.shade600),
               ),
             ] else ...[
-              LiverHealthBar(healthScore: score),
+              PCOSHealthBar(healthScore: score),
               const SizedBox(height: 8),
               Text(
                 'Based on ${_meals.length} meal${_meals.length == 1 ? '' : 's'}${_exerciseController.text.isNotEmpty ? ', exercise' : ''}${_waterController.text.isNotEmpty ? ', and water intake' : ''}',

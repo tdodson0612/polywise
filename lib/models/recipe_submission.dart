@@ -216,15 +216,15 @@ enum SubmissionStatus {
 /// Automated compliance check results for a recipe submission
 class ComplianceReport {
   final bool hasCompleteNutrition;
-  final bool isLiverSafe;
+  final bool ispolySafe;
   final bool contentAppropriate;
-  final int? healthScore; // 0-100 from LiverHealthBar
+  final int? healthScore; // 0-100 from PCOSHealthBar
   final List<String> warnings;
   final List<String> errors;
 
   ComplianceReport({
     required this.hasCompleteNutrition,
-    required this.isLiverSafe,
+    required this.ispolySafe,
     required this.contentAppropriate,
     this.healthScore,
     this.warnings = const [],
@@ -233,7 +233,7 @@ class ComplianceReport {
 
   /// Check if all compliance checks passed
   bool get allChecksPassed =>
-      hasCompleteNutrition && isLiverSafe && contentAppropriate;
+      hasCompleteNutrition && ispolySafe && contentAppropriate;
 
   /// Check if there are any errors
   bool get hasErrors => errors.isNotEmpty;
@@ -248,7 +248,7 @@ class ComplianceReport {
   double get passRate {
     int passed = 0;
     if (hasCompleteNutrition) passed++;
-    if (isLiverSafe) passed++;
+    if (ispolySafe) passed++;
     if (contentAppropriate) passed++;
     return (passed / 3.0) * 100;
   }
@@ -259,7 +259,7 @@ class ComplianceReport {
   factory ComplianceReport.fromJson(Map<String, dynamic> json) {
     return ComplianceReport(
       hasCompleteNutrition: json['has_complete_nutrition'] as bool? ?? false,
-      isLiverSafe: json['is_liver_safe'] as bool? ?? false,
+      ispolySafe: json['is_poly_safe'] as bool? ?? false,
       contentAppropriate: json['content_appropriate'] as bool? ?? false,
       healthScore: json['health_score'] as int?,
       warnings: (json['warnings'] as List?)?.cast<String>() ?? [],
@@ -273,7 +273,7 @@ class ComplianceReport {
   Map<String, dynamic> toJson() {
     return {
       'has_complete_nutrition': hasCompleteNutrition,
-      'is_liver_safe': isLiverSafe,
+      'is_poly_safe': ispolySafe,
       'content_appropriate': contentAppropriate,
       if (healthScore != null) 'health_score': healthScore,
       'warnings': warnings,
@@ -286,7 +286,7 @@ class ComplianceReport {
   // ============================================================
   ComplianceReport copyWith({
     bool? hasCompleteNutrition,
-    bool? isLiverSafe,
+    bool? ispolySafe,
     bool? contentAppropriate,
     int? healthScore,
     List<String>? warnings,
@@ -294,7 +294,7 @@ class ComplianceReport {
   }) {
     return ComplianceReport(
       hasCompleteNutrition: hasCompleteNutrition ?? this.hasCompleteNutrition,
-      isLiverSafe: isLiverSafe ?? this.isLiverSafe,
+      ispolySafe: ispolySafe ?? this.ispolySafe,
       contentAppropriate: contentAppropriate ?? this.contentAppropriate,
       healthScore: healthScore ?? this.healthScore,
       warnings: warnings ?? this.warnings,
@@ -312,7 +312,7 @@ class ComplianceReport {
     if (identical(this, other)) return true;
     return other is ComplianceReport &&
         other.hasCompleteNutrition == hasCompleteNutrition &&
-        other.isLiverSafe == isLiverSafe &&
+        other.ispolySafe == ispolySafe &&
         other.contentAppropriate == contentAppropriate &&
         other.healthScore == healthScore;
   }
@@ -320,7 +320,7 @@ class ComplianceReport {
   @override
   int get hashCode {
     return hasCompleteNutrition.hashCode ^
-        isLiverSafe.hashCode ^
+        ispolySafe.hashCode ^
         contentAppropriate.hashCode ^
         healthScore.hashCode;
   }

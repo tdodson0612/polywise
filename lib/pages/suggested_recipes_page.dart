@@ -47,12 +47,12 @@ class Recipe {
 
 class SuggestedRecipesPage extends StatefulWidget {
   final List<String> productIngredients;
-  final int liverHealthScore;
+  final int polyHealthScore;
 
   const SuggestedRecipesPage({
     super.key,
     required this.productIngredients,
-    required this.liverHealthScore,
+    required this.polyHealthScore,
   });
 
   @override
@@ -359,9 +359,9 @@ class _SuggestedRecipesPageState extends State<SuggestedRecipesPage> {
   void _loadFallbackRecipes() {
     List<Recipe> fallbackRecipes;
     
-    if (widget.liverHealthScore >= 75) {
+    if (widget.polyHealthScore >= 75) {
       fallbackRecipes = _getHealthyFallbackRecipes();
-    } else if (widget.liverHealthScore >= 50) {
+    } else if (widget.polyHealthScore >= 50) {
       fallbackRecipes = _getModerateFallbackRecipes();
     } else {
       fallbackRecipes = _getDetoxFallbackRecipes();
@@ -411,7 +411,7 @@ class _SuggestedRecipesPageState extends State<SuggestedRecipesPage> {
     Recipe(
       id: 'fallback_4',
       title: "Lentil Soup",
-      description: "Fiber-rich soup to support liver health",
+      description: "Fiber-rich soup to support poly health",
       ingredients: ["Red lentils", "Carrots", "Celery", "Onions", "Low-sodium vegetable broth"],
       instructions: "1. Sauté diced onions, carrots, and celery\n2. Add lentils and broth\n3. Bring to a boil, then simmer\n4. Cook for 20-25 minutes until lentils are tender\n5. Season with herbs and spices",
       healthScore: 80,
@@ -422,7 +422,7 @@ class _SuggestedRecipesPageState extends State<SuggestedRecipesPage> {
     Recipe(
       id: 'fallback_5',
       title: "Green Detox Smoothie",
-      description: "Liver-cleansing green smoothie",
+      description: "poly-cleansing green smoothie",
       ingredients: ["Spinach", "Green apple", "Lemon juice", "Fresh ginger", "Water"],
       instructions: "1. Wash spinach thoroughly\n2. Core and chop apple\n3. Peel and slice ginger\n4. Add all ingredients to blender\n5. Blend until smooth and serve immediately",
       healthScore: 95,

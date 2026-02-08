@@ -4,7 +4,7 @@ import 'package:polywise/services/saved_ingredients_service.dart';
 import 'package:polywise/widgets/nutrition_display.dart';
 import 'package:polywise/models/nutrition_info.dart';
 import 'package:polywise/services/error_handling_service.dart';
-import '../polyhealthbar.dart';
+import '../PCOSHealthBar.dart';
 
 class SavedIngredientsScreen extends StatefulWidget {
   const SavedIngredientsScreen({super.key});
@@ -153,7 +153,7 @@ class _SavedIngredientsScreenState extends State<SavedIngredientsScreen> {
                     padding: const EdgeInsets.all(16),
                     child: NutritionDisplay(
                       nutrition: _selectedIngredient!,
-                      liverScore: LiverHealthCalculator.calculate(
+                      polyScore: PCOSHealthCalculator.calculate(
                         fat: _selectedIngredient!.fat,
                         sodium: _selectedIngredient!.sodium,
                         sugar: _selectedIngredient!.sugar,

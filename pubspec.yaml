@@ -1,5 +1,5 @@
 name: polywise
-description: A Flutter app to scan food barcodes, show nutrition info, and discover healthy recipes for liver health.
+description: A Flutter app to scan food barcodes, show nutrition info, and discover healthy recipes for poly health.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 # App version - increment for each App Store submission
@@ -97,10 +97,10 @@ flutter:
     - assets/backgrounds/ipad_background.png
     
     # App icon (for launcher icons generation)
-    - assets/icon/liverlogo.png
+    - assets/icon/polylogo.png
     
     # Additional assets (add as needed)
-    - assets/leviliver.png
+    - assets/levipoly.png
 
   
 
@@ -108,15 +108,15 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/icon/liverlogo.png"
+  image_path: "assets/icon/polylogo.png"
   
   ios_config:
     generate: true
-    image_path: "assets/icon/liverlogo.png"
+    image_path: "assets/icon/polylogo.png"
   
   android_config:
     generate: true
-    image_path: "assets/icon/liverlogo.png"
+    image_path: "assets/icon/polylogo.png"
   
   remove_alpha_ios: true
 

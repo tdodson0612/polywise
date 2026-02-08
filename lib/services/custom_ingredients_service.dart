@@ -25,7 +25,7 @@ class CustomIngredientsService {
     String? brand,
     String? servingSize,
     String? category,
-    bool isLiverFriendly = true,
+    bool ispolyFriendly = true,
   }) async {
     AuthService.ensureUserAuthenticated();
     final userId = AuthService.currentUserId!;
@@ -70,7 +70,7 @@ class CustomIngredientsService {
           'nutrition': nutrition.toJson(),
           'serving_size': servingSize?.trim(),
           'category': category?.trim(),
-          'is_liver_friendly': isLiverFriendly,
+          'is_poly_friendly': ispolyFriendly,
           'created_at': DateTime.now().toIso8601String(),
           'updated_at': DateTime.now().toIso8601String(),
         },
@@ -106,7 +106,7 @@ class CustomIngredientsService {
     String? brand,
     String? servingSize,
     String? category,
-    bool? isLiverFriendly,
+    bool? ispolyFriendly,
   }) async {
     AuthService.ensureUserAuthenticated();
     final userId = AuthService.currentUserId!;
@@ -122,8 +122,8 @@ class CustomIngredientsService {
       if (brand != null) updates['brand'] = brand.trim();
       if (servingSize != null) updates['serving_size'] = servingSize.trim();
       if (category != null) updates['category'] = category.trim();
-      if (isLiverFriendly != null) {
-        updates['is_liver_friendly'] = isLiverFriendly;
+      if (ispolyFriendly != null) {
+        updates['is_poly_friendly'] = ispolyFriendly;
       }
 
       await DatabaseServiceCore.workerQuery(
