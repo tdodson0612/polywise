@@ -1,5 +1,4 @@
-// lib/pages/favorite_recipes_page.dart - UPDATED: Added 4-button action bar
-// Uses Cloudflare Worker for database queries
+// lib/pages/favorite_recipes_page.dart - PCOS conversion
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -352,7 +351,7 @@ class _FavoriteRecipesPageState extends State<FavoriteRecipesPage> {
         description: 'Shared from favorites',
         ingredients: recipe.ingredients,
         directions: recipe.directions,
-        visibility: 'public', // or show a dialog to let user choose
+        visibility: 'public',
       );
 
       if (mounted) {
@@ -1035,7 +1034,6 @@ class _FavoriteRecipesPageState extends State<FavoriteRecipesPage> {
             ),
             SizedBox(height: 32),
             
-            // 🔥 NEW: 4-Button Action Bar (replacing the 2 buttons)
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(

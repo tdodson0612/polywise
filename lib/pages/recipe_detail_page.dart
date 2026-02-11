@@ -1057,7 +1057,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
                         NutritionFactsLabel(
                           nutrition: widget.nutrition!,
                           servings: widget.servings,
-                          showpolyScore: true,
+                          showPCOSScore: true,
                         ),
                         
                         const SizedBox(height: 16),

@@ -1,4 +1,4 @@
-// lib/pages/grocery_list.dart - ENHANCED with multi-select and action buttons
+// lib/pages/grocery_list.dart - PCOS conversion
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,6 +10,7 @@ import '../services/error_handling_service.dart';
 
 class GroceryListPage extends StatefulWidget {
   final String? initialItem;
+
   const GroceryListPage({super.key, this.initialItem});
 
   @override
@@ -20,12 +21,9 @@ class _GroceryListPageState extends State<GroceryListPage> {
   List<Map<String, TextEditingController>> itemControllers = [];
   bool isLoading = true;
   bool isSaving = false;
-  
-  // ✅ NEW: Multi-select mode
   bool isMultiSelectMode = false;
   Set<int> selectedIndices = {};
 
-  // Cache configuration
   static const Duration _listCacheDuration = Duration(minutes: 5);
 
   @override
@@ -42,7 +40,7 @@ class _GroceryListPageState extends State<GroceryListPage> {
     try {
       AuthService.ensureUserAuthenticated();
       await _loadGroceryList();
-
+      
       if (widget.initialItem != null && widget.initialItem!.isNotEmpty) {
         _addScannedItem(widget.initialItem!);
       }
@@ -102,19 +100,21 @@ class _GroceryListPageState extends State<GroceryListPage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final cached = prefs.getString('grocery_list');
+      
       if (cached == null) return null;
-
+      
       final data = json.decode(cached);
       final timestamp = data['_cached_at'] as int?;
+      
       if (timestamp == null) return null;
-
+      
       final age = DateTime.now().millisecondsSinceEpoch - timestamp;
       if (age > _listCacheDuration.inMilliseconds) return null;
-
+      
       final items = (data['items'] as List)
           .map((e) => GroceryItem.fromJson(e))
           .toList();
-
+      
       print('📦 Using cached grocery list (${items.length} items)');
       return items;
     } catch (e) {
@@ -153,7 +153,7 @@ class _GroceryListPageState extends State<GroceryListPage> {
     String name = itemText;
 
     final parts = itemText.trim().split(RegExp(r'\s+'));
-    
+
     if (parts.length >= 3) {
       if (RegExp(r'^[\d.]+$').hasMatch(parts[0])) {
         quantity = parts[0];
@@ -322,7 +322,6 @@ class _GroceryListPageState extends State<GroceryListPage> {
     }
   }
 
-  // ✅ NEW: Toggle multi-select mode
   void _toggleMultiSelectMode() {
     setState(() {
       isMultiSelectMode = !isMultiSelectMode;
@@ -332,7 +331,6 @@ class _GroceryListPageState extends State<GroceryListPage> {
     });
   }
 
-  // ✅ NEW: Toggle item selection
   void _toggleSelection(int index) {
     setState(() {
       if (selectedIndices.contains(index)) {
@@ -343,7 +341,6 @@ class _GroceryListPageState extends State<GroceryListPage> {
     });
   }
 
-  // ✅ NEW: Add selected items to draft recipe
   Future<void> _addToDraftRecipe() async {
     if (selectedIndices.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -371,7 +368,6 @@ class _GroceryListPageState extends State<GroceryListPage> {
         })
         .toList();
 
-    // Navigate to submit recipe with pre-filled ingredients
     Navigator.pushNamed(
       context,
       '/submit-recipe',
@@ -379,7 +375,6 @@ class _GroceryListPageState extends State<GroceryListPage> {
     );
   }
 
-  // ✅ NEW: Find recipes using selected ingredients
   Future<void> _findSuggestedRecipe() async {
     if (selectedIndices.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -396,7 +391,6 @@ class _GroceryListPageState extends State<GroceryListPage> {
         .map((i) => itemControllers[i]['name']!.text.trim())
         .toList();
 
-    // Navigate to recipe search with these ingredients as keywords
     Navigator.pushNamed(
       context,
       '/home',
@@ -404,7 +398,6 @@ class _GroceryListPageState extends State<GroceryListPage> {
     );
   }
 
-  // ✅ NEW: Find ingredient substitutes
   Future<void> _findSubstitute() async {
     if (selectedIndices.length != 1) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -423,7 +416,6 @@ class _GroceryListPageState extends State<GroceryListPage> {
       return;
     }
 
-    // Show substitution dialog
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -483,11 +475,9 @@ class _GroceryListPageState extends State<GroceryListPage> {
     );
   }
 
-  // ✅ NEW: Get common substitutes with health scoring
   List<Map<String, String>> _getCommonSubstitutes(String ingredient) {
     final lower = ingredient.toLowerCase();
-    
-    // Simple substitution database (can be expanded or moved to a service)
+
     final substitutes = <String, List<Map<String, String>>>{
       'ground beef': [
         {'name': 'Ground turkey', 'healthScore': '85'},
@@ -521,19 +511,16 @@ class _GroceryListPageState extends State<GroceryListPage> {
       ],
     };
 
-    // Check for exact matches first
     if (substitutes.containsKey(lower)) {
       return substitutes[lower]!;
     }
 
-    // Check for partial matches
     for (final key in substitutes.keys) {
       if (lower.contains(key) || key.contains(lower)) {
         return substitutes[key]!;
       }
     }
 
-    // Default generic substitutes
     return [
       {'name': 'No specific substitutes found', 'healthScore': '50'},
       {'name': 'Try searching online for "$ingredient alternatives"', 'healthScore': '50'},
@@ -559,12 +546,12 @@ class _GroceryListPageState extends State<GroceryListPage> {
             final name = controllers['name']!.text.trim();
             final quantity = controllers['quantity']!.text.trim();
             final measurement = controllers['measurement']!.text.trim();
-
+            
             List<String> parts = [];
             if (quantity.isNotEmpty) parts.add(quantity);
             if (measurement.isNotEmpty) parts.add(measurement);
             parts.add(name);
-
+            
             return parts.join(' ');
           })
           .toList();
@@ -583,7 +570,7 @@ class _GroceryListPageState extends State<GroceryListPage> {
 
       await GroceryService.saveGroceryList(items);
       await _invalidateGroceryListCache();
-      
+
       final freshItems = await GroceryService.getGroceryList();
       await _cacheGroceryList(freshItems);
 
@@ -682,7 +669,7 @@ class _GroceryListPageState extends State<GroceryListPage> {
   @override
   Widget build(BuildContext context) {
     final nonEmptyCount = itemControllers.where((c) => c['name']!.text.trim().isNotEmpty).length;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(isMultiSelectMode ? '${selectedIndices.length} selected' : 'My Grocery List'),
@@ -744,7 +731,6 @@ class _GroceryListPageState extends State<GroceryListPage> {
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
-                        // Header
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -801,8 +787,7 @@ class _GroceryListPageState extends State<GroceryListPage> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        
-                        // ✅ NEW: Action buttons when items are selected
+
                         if (isMultiSelectMode && selectedIndices.isNotEmpty)
                           Container(
                             padding: const EdgeInsets.all(12),
@@ -868,8 +853,7 @@ class _GroceryListPageState extends State<GroceryListPage> {
                         
                         if (isMultiSelectMode && selectedIndices.isNotEmpty)
                           const SizedBox(height: 16),
-                        
-                        // List
+
                         Expanded(
                           child: Container(
                             padding: const EdgeInsets.all(16),
@@ -892,7 +876,7 @@ class _GroceryListPageState extends State<GroceryListPage> {
                                     itemBuilder: (context, index) {
                                       final isSelected = selectedIndices.contains(index);
                                       final isEmpty = itemControllers[index]['name']!.text.trim().isEmpty;
-                                      
+
                                       return Padding(
                                         padding: const EdgeInsets.only(bottom: 12),
                                         child: InkWell(
@@ -915,7 +899,6 @@ class _GroceryListPageState extends State<GroceryListPage> {
                                             ),
                                             child: Row(
                                               children: [
-                                                // ✅ Checkbox in multi-select mode
                                                 if (isMultiSelectMode && !isEmpty)
                                                   Padding(
                                                     padding: const EdgeInsets.only(right: 8),
@@ -926,7 +909,6 @@ class _GroceryListPageState extends State<GroceryListPage> {
                                                     ),
                                                   )
                                                 else
-                                                  // Row number in normal mode
                                                   Container(
                                                     width: 35,
                                                     height: 35,
@@ -950,7 +932,7 @@ class _GroceryListPageState extends State<GroceryListPage> {
                                                     ),
                                                   ),
                                                 const SizedBox(width: 12),
-                                                // Quantity field
+
                                                 SizedBox(
                                                   width: 50,
                                                   child: TextField(
@@ -983,7 +965,7 @@ class _GroceryListPageState extends State<GroceryListPage> {
                                                   ),
                                                 ),
                                                 const SizedBox(width: 6),
-                                                // Measurement field
+
                                                 SizedBox(
                                                   width: 55,
                                                   child: TextField(
@@ -1012,7 +994,7 @@ class _GroceryListPageState extends State<GroceryListPage> {
                                                   ),
                                                 ),
                                                 const SizedBox(width: 6),
-                                                // Item name field
+
                                                 Expanded(
                                                   child: TextField(
                                                     controller: itemControllers[index]['name'],
@@ -1041,7 +1023,7 @@ class _GroceryListPageState extends State<GroceryListPage> {
                                                     enabled: !isMultiSelectMode,
                                                   ),
                                                 ),
-                                                // Remove button
+
                                                 if (itemControllers.length > 1 && !isMultiSelectMode)
                                                   Padding(
                                                     padding: const EdgeInsets.only(left: 6),
@@ -1066,8 +1048,7 @@ class _GroceryListPageState extends State<GroceryListPage> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        
-                        // Buttons (hide in multi-select mode)
+
                         if (!isMultiSelectMode)
                           Container(
                             padding: const EdgeInsets.all(16),

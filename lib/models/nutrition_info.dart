@@ -1,6 +1,6 @@
 // lib/models/nutrition_info.dart - COMPLETE VERSION
 import 'dart:convert';
-import 'package:polywise/PCOSHealthBar.dart';
+import 'package:polywise/PolyHealthBar.dart';
 import 'package:polywise/models/pcos_type_nutrition_profile.dart';
 
 

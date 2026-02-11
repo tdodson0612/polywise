@@ -3,7 +3,7 @@
 // iOS 14 Compatible | Production Ready | Uses NutritionInfo
 
 import 'nutrition_info.dart';
-import '../PCOSHealthBar.dart';
+import '../PolyHealthBar.dart';
 
 class DraftRecipe {
   final String? id; // UUID from database
@@ -170,7 +170,7 @@ class DraftRecipe {
   /// Get health score from nutrition
   int get healthScore {
     if (totalNutrition == null) return 0;
-    return totalNutrition!.calculatepolyScore();
+    return totalNutrition!.calculatePCOSScore();
   }
 
   @override

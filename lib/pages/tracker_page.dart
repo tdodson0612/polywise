@@ -1,5 +1,6 @@
 // lib/pages/tracker_page.dart
 // Updated with unit dropdowns, improved height handling, and ingredient auto-fill
+// PCOS-TYPE BASED VERSION
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,7 +11,7 @@ import '../services/error_handling_service.dart';
 import '../services/saved_ingredients_service.dart';
 import '../models/tracker_entry.dart';
 import '../models/nutrition_info.dart';
-import '../PCOSHealthBar.dart';
+import '../PolyHealthBar.dart';
 import '../config/app_config.dart';
 import '../widgets/premium_gate.dart';
 import '../controllers/premium_gate_controller.dart';
@@ -28,7 +29,7 @@ class _TrackerPageState extends State<TrackerPage> {
 
   DateTime _selectedDate = DateTime.now();
   TrackerEntry? _currentEntry;
-  String? _diseaseType;
+  String? _pcosType; // ← CHANGED from _diseaseType
   double? _userHeight;
   bool _weightVisible = false;
   bool _weightLossVisible = false;
@@ -209,7 +210,8 @@ class _TrackerPageState extends State<TrackerPage> {
         throw Exception('User not logged in');
       }
 
-      final diseaseType = await ProfileService.getDiseaseType(userId);
+      // ← CHANGED: Get PCOS type instead of disease type
+      final pcosType = await ProfileService.getPCOSType(userId);
       final height = await ProfileService.getHeight(userId);
       final weightVisible = await ProfileService.getWeightVisibility(userId);
       final weightLossVisible = await ProfileService.getWeightLossVisibility(userId);
@@ -222,7 +224,8 @@ class _TrackerPageState extends State<TrackerPage> {
 
       if (mounted) {
         setState(() {
-          _diseaseType = diseaseType ?? 'Other (default scoring)';
+          // ← CHANGED: Store PCOS type with fallback
+          _pcosType = pcosType ?? 'Not set (general scoring)';
           _userHeight = height;
           _weightVisible = weightVisible;
           _weightLossVisible = weightLossVisible;
@@ -299,9 +302,10 @@ class _TrackerPageState extends State<TrackerPage> {
         }
       }
 
+      // ← CHANGED: Pass pcosType instead of diseaseType
       final score = TrackerService.calculateDailyScore(
         meals: _meals,
-        diseaseType: _diseaseType,
+        pcosType: _pcosType,
         exercise: exerciseText,
         waterIntake: waterText,
       );
@@ -674,7 +678,7 @@ class _TrackerPageState extends State<TrackerPage> {
       body: PremiumGate(
         feature: PremiumFeature.healthTracker,
         featureName: 'Health Tracker',
-        featureDescription: 'Track your meals, exercise, water intake, and weight with disease-aware scoring.',
+        featureDescription: 'Track your meals, exercise, water intake, and weight with PCOS-aware scoring.',
         child: _buildTrackerContent(),
       ),
     );

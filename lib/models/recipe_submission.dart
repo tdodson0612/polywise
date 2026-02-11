@@ -218,7 +218,7 @@ class ComplianceReport {
   final bool hasCompleteNutrition;
   final bool ispolySafe;
   final bool contentAppropriate;
-  final int? healthScore; // 0-100 from PCOSHealthBar
+  final int? healthScore; // 0-100 from PolyHealthBar
   final List<String> warnings;
   final List<String> errors;
 

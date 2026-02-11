@@ -1,6 +1,4 @@
-// lib/pages/badge_debug_page.dart
-// Temporary diagnostic page to debug badge issues
-
+// lib/pages/badge_debug_page.dart - PCOS conversion
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/messaging_service.dart';
@@ -31,7 +29,6 @@ class _BadgeDebugPageState extends State<BadgeDebugPage> {
     final results = <String, dynamic>{};
 
     try {
-      // 1. Check SharedPreferences cache
       final prefs = await SharedPreferences.getInstance();
       results['cached_unread_count'] = prefs.getInt('cached_unread_count');
       results['cached_unread_count_time'] = prefs.getInt('cached_unread_count_time');
@@ -41,7 +38,6 @@ class _BadgeDebugPageState extends State<BadgeDebugPage> {
         results['cache_age_seconds'] = (age / 1000).toStringAsFixed(1);
       }
 
-      // 2. Query database directly with boolean false
       final unreadMessages = await DatabaseServiceCore.workerQuery(
         action: 'select',
         table: 'messages',
@@ -51,11 +47,9 @@ class _BadgeDebugPageState extends State<BadgeDebugPage> {
           'is_read': false,
         },
       );
-      
       results['db_unread_count_boolean'] = (unreadMessages as List).length;
       results['db_messages_sample'] = unreadMessages.take(3).toList();
 
-      // 3. Query database with integer 0 (old way)
       try {
         final unreadMessagesInt = await DatabaseServiceCore.workerQuery(
           action: 'select',
@@ -71,11 +65,9 @@ class _BadgeDebugPageState extends State<BadgeDebugPage> {
         results['db_unread_count_integer'] = 'Error: $e';
       }
 
-      // 4. Get count from service
       final serviceCount = await MessagingService.getUnreadMessageCount();
       results['service_unread_count'] = serviceCount;
 
-      // 5. Check all message-related cache keys
       final allKeys = prefs.getKeys();
       final messageCacheKeys = allKeys.where((key) => 
         key.contains('cache_messages_') || 
@@ -83,7 +75,6 @@ class _BadgeDebugPageState extends State<BadgeDebugPage> {
         key.contains('cached_unread_')
       ).toList();
       results['all_message_cache_keys'] = messageCacheKeys;
-
     } catch (e) {
       results['error'] = e.toString();
     }
@@ -97,7 +88,6 @@ class _BadgeDebugPageState extends State<BadgeDebugPage> {
   Future<void> _forceClearAllCaches() async {
     try {
       print('🧹 FORCE CLEARING ALL CACHES...');
-      
       final prefs = await SharedPreferences.getInstance();
       final allKeys = prefs.getKeys().toList();
       
@@ -114,17 +104,11 @@ class _BadgeDebugPageState extends State<BadgeDebugPage> {
           backgroundColor: Colors.green,
         ),
       );
-      
-      // Wait a moment
+
       await Future.delayed(Duration(milliseconds: 500));
-      
-      // Force refresh badges
       await MenuIconWithBadge.invalidateCache();
       await AppDrawer.invalidateUnreadCache();
-      
-      // Refresh diagnostics
       await _runDiagnostics();
-      
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -138,7 +122,6 @@ class _BadgeDebugPageState extends State<BadgeDebugPage> {
   Future<void> _forceRefreshBadges() async {
     try {
       print('🔄 FORCE REFRESHING BADGES...');
-      
       await MessagingService.refreshUnreadBadge();
       
       ScaffoldMessenger.of(context).showSnackBar(
@@ -149,7 +132,6 @@ class _BadgeDebugPageState extends State<BadgeDebugPage> {
       );
       
       await _runDiagnostics();
-      
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -188,7 +170,6 @@ class _BadgeDebugPageState extends State<BadgeDebugPage> {
                         ? '${_diagnostics['cache_age_seconds']}s' 
                         : 'N/A'),
                   ]),
-                  
                   SizedBox(height: 24),
                   
                   _buildSection('Database Query Results', [
@@ -199,7 +180,6 @@ class _BadgeDebugPageState extends State<BadgeDebugPage> {
                     _buildRow('Service count', _diagnostics['service_unread_count'], 
                         color: Colors.blue),
                   ]),
-                  
                   SizedBox(height: 24),
                   
                   _buildSection('Sample Unread Messages', [
@@ -208,7 +188,6 @@ class _BadgeDebugPageState extends State<BadgeDebugPage> {
                       style: TextStyle(fontSize: 12, fontFamily: 'monospace'),
                     ),
                   ]),
-                  
                   SizedBox(height: 24),
                   
                   _buildSection('All Message Cache Keys', [
@@ -230,7 +209,6 @@ class _BadgeDebugPageState extends State<BadgeDebugPage> {
                   ],
                   
                   SizedBox(height: 32),
-                  
                   Row(
                     children: [
                       Expanded(

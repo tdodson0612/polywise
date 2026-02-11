@@ -1,7 +1,7 @@
 // test/recipe_generator_test.dart - FIXED VERSION
 import 'package:flutter_test/flutter_test.dart';
 import 'package:polywise/home_screen.dart';
-import 'package:polywise/PCOSHealthBar.dart';
+import 'package:polywise/PolyHealthBar.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

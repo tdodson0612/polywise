@@ -359,7 +359,7 @@ class _Sprint1TestPageState extends State<Sprint1TestPage>
   }
 
   Widget _buildpolyScore(NutritionInfo nutrition) {
-    final score = nutrition.calculatepolyScore();
+    final score = nutrition.calculatePCOSScore();
     final color = score >= 70
         ? Colors.green
         : score >= 40

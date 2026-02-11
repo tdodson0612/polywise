@@ -4,7 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:polywise/models/nutrition_info.dart';
-import 'package:polywise/PCOSHealthBar.dart';
+import 'package:polywise/PolyHealthBar.dart';
 
 class NutritionFactsLabel extends StatelessWidget {
   final NutritionInfo nutrition;

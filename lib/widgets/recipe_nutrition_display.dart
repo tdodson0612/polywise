@@ -1,7 +1,7 @@
 // lib/widgets/recipe_nutrition_display.dart - UPDATED: Standardized macro/micro format
 import 'package:flutter/material.dart';
 import 'package:polywise/services/recipe_nutrition_service.dart';
-import 'package:polywise/PCOSHealthBar.dart';
+import 'package:polywise/PolyHealthBar.dart';
 
 class RecipeNutritionDisplay extends StatelessWidget {
   final RecipeNutrition nutrition;

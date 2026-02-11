@@ -1,4 +1,4 @@
-// lib/PCOSHealthBar.dart
+// lib/PolyHealthBar.dart
 
 import 'package:flutter/material.dart';
 import 'models/pcos_type_nutrition_profile.dart';
@@ -82,10 +82,10 @@ class PCOSHealthCalculator {
   }
 }
 
-class PCOSHealthBar extends StatelessWidget {
+class PolyHealthBar extends StatelessWidget {
   final int healthScore;
 
-  const PCOSHealthBar({super.key, required this.healthScore});
+  const PolyHealthBar({super.key, required this.healthScore});
 
   /// Legacy static function for backwards compatibility
   /// Delegates to PCOSHealthCalculator.calculate()

@@ -1777,7 +1777,7 @@ class _SubmitRecipePageState extends State<SubmitRecipePage> {
                                     children: [
                                       NutritionFactsLabel(
                                         nutrition: _convertRecipeNutritionToInfo(_recipeNutrition!),
-                                        showpolyScore: true,
+                                        showPCOSScore: true,
                                       ),
                                       
                                       const SizedBox(height: 12),

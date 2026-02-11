@@ -1,7 +1,4 @@
-// lib/pages/my_cookbook_page.dart
-// User's private draft recipes (Sprint 2)
-// iOS 14 Compatible | Production Ready
-
+// lib/pages/my_cookbook_page.dart - PCOS conversion
 import 'package:flutter/material.dart';
 import '../models/draft_recipe.dart';
 import '../services/draft_recipes_service.dart';
@@ -170,7 +167,6 @@ class _MyCookbookPageState extends State<MyCookbookPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Title and health score
               Row(
                 children: [
                   Expanded(
@@ -210,7 +206,6 @@ class _MyCookbookPageState extends State<MyCookbookPage> {
 
               const SizedBox(height: 12),
 
-              // Metadata
               Row(
                 children: [
                   Icon(Icons.restaurant, size: 14, color: Colors.grey.shade600),
@@ -237,7 +232,6 @@ class _MyCookbookPageState extends State<MyCookbookPage> {
 
               const SizedBox(height: 12),
 
-              // Actions
               Row(
                 children: [
                   Expanded(
@@ -283,7 +277,6 @@ class _MyCookbookPageState extends State<MyCookbookPage> {
       ),
       body: Column(
         children: [
-          // Limit info header
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -314,7 +307,6 @@ class _MyCookbookPageState extends State<MyCookbookPage> {
             ),
           ),
 
-          // Recipe list
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
