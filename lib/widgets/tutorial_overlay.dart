@@ -177,7 +177,7 @@ class _TutorialOverlayState extends State<TutorialOverlay>
   String _getTalkBubbleText() {
     switch (_currentStep) {
       case TutorialStep.TUTORIAL_INTRO:
-        return "Hi there, friend! I'm Paullie the Ovary. Let me walk you through this app and show you how we use it to support your PCOS health journey.";
+        return "Hi there, friend! I'm Paullie! I have PCOS just like you! We ladies have to stick together! So, let me walk you through this app and show you how we use it to support your PCOS health journey.";
       case TutorialStep.TUTORIAL_ALL_BUTTONS:
         return "These buttons are the 4 different ways you can see nutrition facts and suggested PCOS-friendly recipes for any food you like! Let's walk through them together!";
       case TutorialStep.TUTORIAL_AUTO:

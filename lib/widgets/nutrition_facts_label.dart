@@ -88,7 +88,7 @@ class NutritionFactsLabel extends StatelessWidget {
               const SizedBox(height: 16),
               const Divider(thickness: 2, color: Colors.black),
               const SizedBox(height: 12),
-              PCOSHealthBar(
+              PolyHealthBar(
                 healthScore: nutrition.calculatePCOSScore(),
               ),
             ],

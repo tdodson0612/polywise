@@ -147,7 +147,7 @@ class RecipeNutritionDisplay extends StatelessWidget {
             
             // poly health score
             const SizedBox(height: 12),
-            PCOSHealthBar(healthScore: nutrition.polyScore),
+            PolyHealthBar(healthScore: nutrition.polyScore),
           ],
         ),
       ),

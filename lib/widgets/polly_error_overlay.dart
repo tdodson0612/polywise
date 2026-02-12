@@ -1,4 +1,4 @@
-// lib/widgets/levi_error_overlay.dart
+// lib/widgets/polly_error_overlay.dart
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -111,7 +111,7 @@ class _LeviErrorOverlayState extends State<LeviErrorOverlay>
                         ),
                         child: ClipOval(
                           child: Image.asset(
-                            'assets/levipoly.png',
+                            'assets/polly.png',
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return Icon(

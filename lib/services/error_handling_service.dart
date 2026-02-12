@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../logger.dart';
-import '../widgets/levi_error_overlay.dart';
+import '../widgets/polly_error_overlay.dart';
 
 /// Centralized error handling service for the entire app
 /// Apple-compliant: No technical jargon, user-friendly messages, retry options

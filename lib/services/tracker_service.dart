@@ -470,7 +470,7 @@ class TrackerService {
 
     // Calculate score for each meal using PCOS-aware logic
     final mealScores = meals.map((meal) {
-      return PCOSHealthBar.calculateScore(
+      return PolyHealthBar.calculateScore(
         fat: (meal['fat'] as num?)?.toDouble() ?? 0.0,
         sodium: (meal['sodium'] as num?)?.toDouble() ?? 0.0,
         sugar: (meal['sugar'] as num?)?.toDouble() ?? 0.0,

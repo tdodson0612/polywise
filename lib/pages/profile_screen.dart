@@ -3100,7 +3100,7 @@ _sectionContainer(
                 ),
               ),
             ] else ...[
-              PCOSHealthBar(healthScore: _todayScore!),
+              PolyHealthBar(healthScore: _todayScore!),
             ],
           ],
         ),
@@ -3151,7 +3151,7 @@ _sectionContainer(
                 ),
               ),
             ] else ...[
-              PCOSHealthBar(healthScore: _weeklyScore!),
+              PolyHealthBar(healthScore: _weeklyScore!),
               const SizedBox(height: 8),
               Text(
                 'Based on your last 7 days of tracking',

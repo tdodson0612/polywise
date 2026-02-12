@@ -946,7 +946,7 @@ class _NutritionSearchScreenState extends State<NutritionSearchScreen> {
                                   disclaimer: disclaimer,
                                 ),
                                 const SizedBox(height: 16),
-                                PCOSHealthBar(
+                                PolyHealthBar(
                                   healthScore: PCOSHealthCalculator.calculate(
                                     fat: _selectedItem!.fat,
                                     sodium: _selectedItem!.sodium,

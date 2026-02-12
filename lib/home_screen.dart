@@ -5000,7 +5000,7 @@ class _HomePageState extends State<HomePage>
             const SizedBox(height: 20),
 
             if (_showPolyBar && _polyHealthScore != null)
-              PCOSHealthBar(healthScore: _polyHealthScore!),
+              PolyHealthBar(healthScore: _polyHealthScore!),
 
             const SizedBox(height: 20),
 
