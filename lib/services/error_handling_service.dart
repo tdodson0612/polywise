@@ -369,7 +369,7 @@ class ErrorHandlingService {
     showDialog(
       context: context,
       barrierDismissible: false, // Must tap button to dismiss
-      builder: (dialogContext) => LeviErrorOverlay(
+      builder: (dialogContext) => PoliErrorOverlay(
         title: errorInfo.title,
         message: customMessage ?? errorInfo.message,
         helpText: errorInfo.userMessage,

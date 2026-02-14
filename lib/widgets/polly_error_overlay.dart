@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 ///Pauliethe poly character showing error messages in a cute way
-class LeviErrorOverlay extends StatefulWidget {
+class PoliErrorOverlay extends StatefulWidget {
   final String title;
   final String message;
   final String? helpText;
@@ -14,7 +14,7 @@ class LeviErrorOverlay extends StatefulWidget {
   final VoidCallback? onNavigate;
   final String? actionButtonText;
 
-  const LeviErrorOverlay({
+  const PoliErrorOverlay({
     super.key,
     required this.title,
     required this.message,
@@ -28,10 +28,10 @@ class LeviErrorOverlay extends StatefulWidget {
   });
 
   @override
-  State<LeviErrorOverlay> createState() => _LeviErrorOverlayState();
+  State<PoliErrorOverlay> createState() => _PoliErrorOverlayState();
 }
 
-class _LeviErrorOverlayState extends State<LeviErrorOverlay>
+class _PoliErrorOverlayState extends State<PoliErrorOverlay>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
