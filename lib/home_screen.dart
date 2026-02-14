@@ -86,7 +86,7 @@ class RecipeGenerator {
       AppConfig.debugPrint('📡 Sending multi-keyword search: $keywords');
 
       final response = await http.post(
-        Uri.parse(AppConfig.cloudflareWorkerQueryEndpoint),
+        Uri.parse(AppConfig.polywiseWorkerQueryEndpoint),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'action': 'search_recipes',
@@ -632,7 +632,7 @@ class _HomePageState extends State<HomePage>
       if (currentUserId == null) return;
 
       final response = await http.post(
-        Uri.parse(AppConfig.cloudflareWorkerQueryEndpoint),
+        Uri.parse(AppConfig.polywiseWorkerQueryEndpoint),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'action': 'select',

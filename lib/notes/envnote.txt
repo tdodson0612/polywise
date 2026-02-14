@@ -2,9 +2,8 @@
 SUPABASE_URL=https://rfvxgtermnmedyrlirka.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJmdnhndGVybW5tZWR5cmxpcmthIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MjcxOTYsImV4cCI6MjA4NjUwMzE5Nn0.9lDN-GHzYeEplKorFVjnZhrrm8CtHNYzCyrGeoHSocA
 
-# Cloudflare Workers (add these after creating your workers)
-CLOUDFLARE_WORKER_URL=
-POLYWISE_WORKER_URL=
+# Cloudflare Workers
+POLYWISE_WORKER_URL=https://polywiseworker.terryd0612.workers.dev
 
 # Environment
 ENVIRONMENT=development

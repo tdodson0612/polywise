@@ -53,7 +53,7 @@ Future<void> _loadRecipes() async {
 
     // MODIFIED: Fetch recipes via Worker instead of direct Supabase
     final response = await http.post(
-      Uri.parse(AppConfig.cloudflareWorkerQueryEndpoint),
+      Uri.parse(AppConfig.polywiseWorkerQueryEndpoint),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'action': 'select',
@@ -125,7 +125,7 @@ Future<bool> _checkIngredientsExist() async {
     for (String ingredient in widget.productIngredients) {
       // MODIFIED: Check via Worker
       final response = await http.post(
-        Uri.parse(AppConfig.cloudflareWorkerQueryEndpoint),
+        Uri.parse(AppConfig.polywiseWorkerQueryEndpoint),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'action': 'select',
@@ -162,7 +162,7 @@ Future<void> _loadMoreRecipes() async {
   try {
     // MODIFIED: Fetch via Worker
     final response = await http.post(
-      Uri.parse(AppConfig.cloudflareWorkerQueryEndpoint),
+      Uri.parse(AppConfig.polywiseWorkerQueryEndpoint),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'action': 'select',

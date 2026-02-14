@@ -1,5 +1,5 @@
-// main.dart - FIXED: iOS/iPad-compatible Firebase initialization
-import 'dart:io';
+// main.dart - Web-compatible version with Platform checks
+import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:app_links/app_links.dart';
@@ -10,7 +10,7 @@ import 'config/app_config.dart';
 import 'pages/badge_debug_page.dart';
 import 'pages/tracker_page.dart';
 
-// 🔥 Firebase imports
+// 🔥 Firebase imports (mobile only)
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
@@ -54,7 +54,15 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  MobileAds.instance.initialize();
+  
+  // ✅ Only initialize MobileAds on mobile platforms
+  if (!kIsWeb) {
+    try {
+      MobileAds.instance.initialize();
+    } catch (e) {
+      debugPrint('⚠️ MobileAds initialization failed: $e');
+    }
+  }
 
   try {
     // Load environment variables FIRST
@@ -64,6 +72,7 @@ void main() async {
     AppConfig.validateConfig();
     
     // 🔥 CRITICAL FIX: Platform-specific Firebase initialization
+    // Web: Skip entirely
     // iOS/iPadOS: Firebase auto-initializes, do NOT manually set up
     // Android: Manual initialization required
     try {
@@ -120,6 +129,11 @@ void main() async {
           AppConfig.debugPrint('✅ Firebase auto-initialized (iOS/iPadOS)');
           AppConfig.debugPrint('ℹ️  FCM disabled on iOS to prevent conflicts during review');
         }
+      } else if (kIsWeb) {
+        // ✅ WEB: Skip Firebase entirely
+        if (AppConfig.enableDebugPrints) {
+          AppConfig.debugPrint('ℹ️  Firebase/FCM skipped (Web platform)');
+        }
       }
     } catch (fcmError) {
       if (AppConfig.enableDebugPrints) {
@@ -148,7 +162,13 @@ void main() async {
     if (AppConfig.enableDebugPrints) {
       AppConfig.debugPrint('✅ Supabase initialized successfully');
       AppConfig.debugPrint('App Name: ${AppConfig.appName}');
-      AppConfig.debugPrint('Platform: ${Platform.operatingSystem} ${Platform.operatingSystemVersion}');
+      
+      // ✅ Only access Platform on non-web
+      if (!kIsWeb) {
+        AppConfig.debugPrint('Platform: ${Platform.operatingSystem} ${Platform.operatingSystemVersion}');
+      } else {
+        AppConfig.debugPrint('Platform: Web');
+      }
     }
 
     runApp(const MyApp());

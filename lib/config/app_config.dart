@@ -11,40 +11,27 @@ class AppConfig {
   
   /// Supabase project URL
   static String get supabaseUrl => 
-      dotenv.env['SUPABASE_URL'] ?? 'https://jmnwyzearnndhlitruyu.supabase.co';
+      dotenv.env['SUPABASE_URL'] ?? 'https://rfvxgtermnmedyrlirka.supabase.co';
   
   /// Supabase anonymous key for client-side auth
   static String get supabaseAnonKey => 
       dotenv.env['SUPABASE_ANON_KEY'] ?? 
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imptbnd5emVhcm5uZGhsaXRydXl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MTc4MTMsImV4cCI6MjA2OTk5MzgxM30.i1_79Ew1co2wIsZTyai_t6KucM-fH_NuKBIhqEuY-44';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJmdnhndGVybW5tZWR5cmxpcmthIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MjcxOTYsImV4cCI6MjA4NjUwMzE5Nn0.9lDN-GHzYeEplKorFVjnZhrrm8CtHNYzCyrGeoHSocA';
 
   // ============================================================
-  // CLOUDFLARE WORKER CONFIGURATION (Dual Workers)
+  // CLOUDFLARE WORKER CONFIGURATION (Single Polywise Worker)
   // ============================================================
   
-  /// Primary Cloudflare Worker URL (original worker)
-  static String get cloudflareWorkerUrl => 
-      dotenv.env['CLOUDFLARE_WORKER_URL'] ?? 
-      'https://shrill-paper-a8ce.terryd0612.workers.dev';
-  
-  /// Secondary Cloudflare Worker URL (polywise worker for feed features)
+  /// Polywise Cloudflare Worker URL
   static String get polywiseWorkerUrl => 
-      dotenv.env['polywise_WORKER_URL'] ?? 
-      'https://polywise-worker.terryd0612.workers.dev';
+      dotenv.env['POLYWISE_WORKER_URL'] ?? 
+      'https://polywiseworker.terryd0612.workers.dev';
   
-  /// Database query endpoint (primary worker)
-  static String get cloudflareWorkerQueryEndpoint => 
-      '$cloudflareWorkerUrl/query';
-  
-  /// Database query endpoint (polywise worker - for feed operations)
+  /// Database query endpoint
   static String get polywiseWorkerQueryEndpoint => 
       '$polywiseWorkerUrl/query';
   
-  /// Storage endpoint for file uploads/downloads (primary worker)
-  static String get cloudflareWorkerStorageEndpoint => 
-      '$cloudflareWorkerUrl/storage';
-  
-  /// Storage endpoint (polywise worker)
+  /// Storage endpoint for file uploads/downloads
   static String get polywiseWorkerStorageEndpoint => 
       '$polywiseWorkerUrl/storage';
 
@@ -53,7 +40,7 @@ class AppConfig {
   // ============================================================
   
   /// App display name
-  static const String appName = 'polywise';
+  static const String appName = 'Polywise';
   
   /// Production mode flag (set true for App Store builds)
   static const bool isProduction = false;
@@ -175,13 +162,8 @@ class AppConfig {
   /// Check if app is in development mode
   static bool get isDevelopment => !isProduction;
   
-  /// Get full storage URL for a file path (primary worker)
+  /// Get full storage URL for a file path
   static String getStorageUrl(String path) {
-    return '$cloudflareWorkerStorageEndpoint/$path';
-  }
-  
-  /// Get full storage URL for a file path (polywise worker)
-  static String getpolywiseStorageUrl(String path) {
     return '$polywiseWorkerStorageEndpoint/$path';
   }
   
@@ -189,14 +171,12 @@ class AppConfig {
   static void validateConfig() {
     assert(supabaseUrl.isNotEmpty, 'Supabase URL is required');
     assert(supabaseAnonKey.isNotEmpty, 'Supabase anon key is required');
-    assert(cloudflareWorkerUrl.isNotEmpty, 'Primary Cloudflare Worker URL is required');
-    assert(polywiseWorkerUrl.isNotEmpty, 'polywise Worker URL is required');
+    assert(polywiseWorkerUrl.isNotEmpty, 'Polywise Worker URL is required');
     
     if (enableDebugPrints) {
       debugPrint('✅ AppConfig validated successfully');
       debugPrint('🔧 Environment: ${isProduction ? "PRODUCTION" : "DEVELOPMENT"}');
-      debugPrint('🔧 Primary Worker: $cloudflareWorkerUrl');
-      debugPrint('🔧 polywise Worker: $polywiseWorkerUrl');
+      debugPrint('🔧 Polywise Worker: $polywiseWorkerUrl');
       debugPrint('🏥 Disease tracking: ${enableDiseaseTracking ? "ENABLED" : "DISABLED"}');
       debugPrint('⚖️ Weight tracking: ${enableWeightTracking ? "ENABLED" : "DISABLED"}');
     }

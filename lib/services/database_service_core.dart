@@ -201,7 +201,7 @@ class DatabaseServiceCore {
 
       final response = await http
           .post(
-            Uri.parse(AppConfig.cloudflareWorkerQueryEndpoint),
+            Uri.parse(AppConfig.polywiseWorkerQueryEndpoint),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
               'action': action,
@@ -273,7 +273,7 @@ class DatabaseServiceCore {
       }
 
       // 🔥 FIX: Use the correct storage endpoint
-      final storageUrl = '${AppConfig.cloudflareWorkerUrl}/storage';
+      final storageUrl = '${AppConfig.polywiseWorkerUrl}/storage';
       
       AppConfig.debugPrint('📡 Uploading to: $storageUrl');
 
@@ -379,7 +379,7 @@ class DatabaseServiceCore {
 
       final response = await http
           .post(
-            Uri.parse('${AppConfig.cloudflareWorkerQueryEndpoint}/storage'),
+            Uri.parse('${AppConfig.polywiseWorkerQueryEndpoint}/storage'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
               'action': 'delete',

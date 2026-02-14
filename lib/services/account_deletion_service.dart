@@ -126,7 +126,7 @@ class AccountDeletionService {
       
       try {
         final response = await http.post(
-          Uri.parse('${AppConfig.cloudflareWorkerQueryEndpoint}/auth/delete-user'),
+          Uri.parse('${AppConfig.polywiseWorkerQueryEndpoint}/auth/delete-user'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
             'userId': userId,

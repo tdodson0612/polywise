@@ -346,7 +346,7 @@ class _NutritionSearchScreenState extends State<NutritionSearchScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse(AppConfig.cloudflareWorkerQueryEndpoint),
+        Uri.parse(AppConfig.polywiseWorkerQueryEndpoint),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'action': 'search_recipes',

@@ -202,7 +202,7 @@ class _FavoriteRecipesPageState extends State<FavoriteRecipesPage> {
 
       if (favoriteId == null) {
         final searchResponse = await http.post(
-          Uri.parse(AppConfig.cloudflareWorkerQueryEndpoint),
+          Uri.parse(AppConfig.polywiseWorkerQueryEndpoint),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
             'action': 'select',
@@ -235,7 +235,7 @@ class _FavoriteRecipesPageState extends State<FavoriteRecipesPage> {
       await _invalidateFavoritesCache();
 
       final deleteResponse = await http.post(
-        Uri.parse(AppConfig.cloudflareWorkerQueryEndpoint),
+        Uri.parse(AppConfig.polywiseWorkerQueryEndpoint),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'action': 'delete',
@@ -283,7 +283,7 @@ class _FavoriteRecipesPageState extends State<FavoriteRecipesPage> {
       }
 
       final searchResponse = await http.post(
-        Uri.parse(AppConfig.cloudflareWorkerQueryEndpoint),
+        Uri.parse(AppConfig.polywiseWorkerQueryEndpoint),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'action': 'select',
@@ -304,7 +304,7 @@ class _FavoriteRecipesPageState extends State<FavoriteRecipesPage> {
       final recipeId = recipes[0]['id'];
 
       final readdResponse = await http.post(
-        Uri.parse(AppConfig.cloudflareWorkerQueryEndpoint),
+        Uri.parse(AppConfig.polywiseWorkerQueryEndpoint),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'action': 'insert',

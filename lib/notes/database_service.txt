@@ -65,7 +65,7 @@ class DatabaseService {
       AppConfig.debugPrint('🔐 Worker query ($action) with auth: ${authToken != null ? "YES" : "NO"}');
       
       final response = await http.post(
-        Uri.parse(AppConfig.cloudflareWorkerQueryEndpoint),
+        Uri.parse(AppConfig.polywiseWorkerQueryEndpoint),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'action': action,
@@ -121,7 +121,7 @@ class DatabaseService {
       }
     
       final response = await http.post(
-        Uri.parse('${AppConfig.cloudflareWorkerQueryEndpoint}/storage'),
+        Uri.parse('${AppConfig.polywiseWorkerQueryEndpoint}/storage'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'action': 'upload',
@@ -186,7 +186,7 @@ class DatabaseService {
       AppConfig.debugPrint('📦 Bucket: $bucket, Path: $path');
      
       final response = await http.post(
-        Uri.parse('${AppConfig.cloudflareWorkerQueryEndpoint}/storage'),
+        Uri.parse('${AppConfig.polywiseWorkerQueryEndpoint}/storage'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'action': 'delete',

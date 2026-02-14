@@ -223,7 +223,7 @@ class _SuggestedRecipesPageState extends State<SuggestedRecipesPage> {
 
       // FIXED: Use dedicated Worker search endpoint
       final response = await http.post(
-        Uri.parse('${AppConfig.cloudflareWorkerQueryEndpoint}/recipes/search'),
+        Uri.parse('${AppConfig.polywiseWorkerQueryEndpoint}/recipes/search'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'ingredients': widget.productIngredients,
@@ -282,7 +282,7 @@ class _SuggestedRecipesPageState extends State<SuggestedRecipesPage> {
       for (String ingredient in widget.productIngredients) {
         // FIXED: Use dedicated Worker endpoint
         final response = await http.post(
-          Uri.parse('${AppConfig.cloudflareWorkerQueryEndpoint}/recipes/check-ingredient'),
+          Uri.parse('${AppConfig.polywiseWorkerQueryEndpoint}/recipes/check-ingredient'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
             'ingredient': ingredient,
@@ -314,7 +314,7 @@ class _SuggestedRecipesPageState extends State<SuggestedRecipesPage> {
     try {
       // FIXED: Use dedicated Worker search endpoint
       final response = await http.post(
-        Uri.parse('${AppConfig.cloudflareWorkerQueryEndpoint}/recipes/search'),
+        Uri.parse('${AppConfig.polywiseWorkerQueryEndpoint}/recipes/search'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'ingredients': widget.productIngredients,

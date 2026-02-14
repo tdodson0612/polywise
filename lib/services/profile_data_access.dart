@@ -1,7 +1,6 @@
 // lib/services/profile_data_access.dart
 // Neutral data-access layer for profile reads/updates.
 // Breaks circular dependency between AuthService ↔ ProfileService.
-
 import 'database_service_core.dart';
 
 class ProfileDataAccess {
@@ -28,10 +27,12 @@ class ProfileDataAccess {
     String email, {
     required bool isPremium,
   }) async {
+    // ✅ FIX: Don't require auth during profile creation
+    // The user just signed up and may not have a session token yet
     await DatabaseServiceCore.workerQuery(
       action: 'insert',
       table: 'user_profiles',
-      requireAuth: true,
+      requireAuth: false, // Changed from true to false
       data: {
         'id': userId,
         'email': email,
