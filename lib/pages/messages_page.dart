@@ -1,8 +1,9 @@
-// lib/pages/messages_page.dart - FIXED: Badge refresh on page load + iOS badge clearing
+// lib/pages/messages_page.dart - UPDATED: 3 tabs (Chats, Requests, Notifications)
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:polywise/services/friends_service.dart';
 import 'package:polywise/services/messaging_service.dart';
+import 'package:polywise/services/feed_notifications_service.dart'; // 🔥 NEW
 import 'package:logger/logger.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -24,12 +25,14 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
   late TabController _tabController;
   List<Map<String, dynamic>> _chats = [];
   List<Map<String, dynamic>> _friendRequests = [];
+  List<Map<String, dynamic>> _notifications = []; // 🔥 NEW
   bool _isLoadingChats = true;
   bool _isLoadingRequests = true;
+  bool _isLoadingNotifications = true; // 🔥 NEW
 
-  // ✅ NEW: Platform channel for clearing iOS badge
+  // Platform channel for clearing iOS badge
   static const platform = MethodChannel('com.polywise/badge');
-  
+
   Future<void> _clearIOSBadge() async {
     try {
       await platform.invokeMethod('clearBadge');
@@ -42,18 +45,19 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
   // Cache configuration
   static const Duration _chatsCacheDuration = Duration(minutes: 1);
   static const Duration _requestsCacheDuration = Duration(minutes: 2);
+  static const Duration _notificationsCacheDuration = Duration(minutes: 1); // 🔥 NEW
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    
-    // ✅ CRITICAL FIX: Refresh badge AND clear iOS badge when entering messages page
+    _tabController = TabController(length: 3, vsync: this); // 🔥 CHANGED from 2 to 3
+
+    // Refresh badge and clear iOS badge when entering page
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _clearIOSBadge();
       await MessagingService.refreshUnreadBadge();
     });
-    
+
     _loadData();
   }
 
@@ -69,21 +73,21 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
     try {
       final prefs = await SharedPreferences.getInstance();
       final cached = prefs.getString('user_chats');
-      
+
       if (cached == null) return null;
-      
+
       final data = json.decode(cached);
       final timestamp = data['_cached_at'] as int?;
-      
+
       if (timestamp == null) return null;
-      
+
       final age = DateTime.now().millisecondsSinceEpoch - timestamp;
       if (age > _chatsCacheDuration.inMilliseconds) return null;
-      
+
       final chats = (data['chats'] as List)
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
-      
+
       _logger.d('📦 Using cached chats (${chats.length} found)');
       return chats;
     } catch (e) {
@@ -120,21 +124,21 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
     try {
       final prefs = await SharedPreferences.getInstance();
       final cached = prefs.getString('friend_requests');
-      
+
       if (cached == null) return null;
-      
+
       final data = json.decode(cached);
       final timestamp = data['_cached_at'] as int?;
-      
+
       if (timestamp == null) return null;
-      
+
       final age = DateTime.now().millisecondsSinceEpoch - timestamp;
       if (age > _requestsCacheDuration.inMilliseconds) return null;
-      
+
       final requests = (data['requests'] as List)
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
-      
+
       _logger.d('📦 Using cached friend requests (${requests.length} found)');
       return requests;
     } catch (e) {
@@ -167,25 +171,77 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
     }
   }
 
+  // 🔥 NEW: Notifications cache helpers
+  Future<List<Map<String, dynamic>>?> _getCachedNotifications() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cached = prefs.getString('feed_notifications');
+
+      if (cached == null) return null;
+
+      final data = json.decode(cached);
+      final timestamp = data['_cached_at'] as int?;
+
+      if (timestamp == null) return null;
+
+      final age = DateTime.now().millisecondsSinceEpoch - timestamp;
+      if (age > _notificationsCacheDuration.inMilliseconds) return null;
+
+      final notifications = (data['notifications'] as List)
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+
+      _logger.d('📦 Using cached notifications (${notifications.length} found)');
+      return notifications;
+    } catch (e) {
+      _logger.e('Error loading cached notifications: $e');
+      return null;
+    }
+  }
+
+  Future<void> _cacheNotifications(List<Map<String, dynamic>> notifications) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cacheData = {
+        'notifications': notifications,
+        '_cached_at': DateTime.now().millisecondsSinceEpoch,
+      };
+      await prefs.setString('feed_notifications', json.encode(cacheData));
+      _logger.d('💾 Cached ${notifications.length} notifications');
+    } catch (e) {
+      _logger.e('Error caching notifications: $e');
+    }
+  }
+
+  Future<void> _invalidateNotificationsCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('feed_notifications');
+      _logger.d('🗑️ Invalidated notifications cache');
+    } catch (e) {
+      _logger.e('Error invalidating notifications cache: $e');
+    }
+  }
+
   // ========== LOAD FUNCTIONS WITH CACHING ==========
 
   Future<void> _loadData({bool forceRefresh = false}) async {
     await Future.wait([
       _loadChats(forceRefresh: forceRefresh),
       _loadFriendRequests(forceRefresh: forceRefresh),
+      _loadNotifications(forceRefresh: forceRefresh), // 🔥 NEW
     ]);
   }
 
   Future<void> _loadChats({bool forceRefresh = false}) async {
     setState(() => _isLoadingChats = true);
-    
+
     try {
       _logger.d('📨 Loading chat list...');
-      
-      // Try cache first unless force refresh
+
       if (!forceRefresh) {
         final cachedChats = await _getCachedChats();
-        
+
         if (cachedChats != null) {
           if (mounted) {
             setState(() {
@@ -197,19 +253,17 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
         }
       }
 
-      // Cache miss or force refresh, fetch from database
       final chats = await MessagingService.getChatList();
-      
-      // Sort chats by last message timestamp (newest first)
+
       chats.sort((a, b) {
         try {
           final timeA = a['lastMessage']?['created_at'];
           final timeB = b['lastMessage']?['created_at'];
-          
+
           if (timeA == null && timeB == null) return 0;
           if (timeA == null) return 1;
           if (timeB == null) return -1;
-          
+
           final dateA = DateTime.parse(timeA);
           final dateB = DateTime.parse(timeB);
           return dateB.compareTo(dateA);
@@ -217,20 +271,18 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
           return 0;
         }
       });
-      
-      // Cache the results
+
       await _cacheChats(chats);
-      
+
       _logger.i('✅ Loaded ${chats.length} chats');
-      
+
       setState(() {
         _chats = chats;
         _isLoadingChats = false;
       });
     } catch (e) {
       _logger.e('❌ Error loading chats: $e');
-      
-      // Try to use stale cache on error
+
       if (!forceRefresh) {
         final staleChats = await _getCachedChats();
         if (staleChats != null && mounted) {
@@ -241,9 +293,9 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
           return;
         }
       }
-      
+
       setState(() => _isLoadingChats = false);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -262,14 +314,13 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
 
   Future<void> _loadFriendRequests({bool forceRefresh = false}) async {
     setState(() => _isLoadingRequests = true);
-    
+
     try {
       _logger.d('👥 Loading friend requests...');
-      
-      // Try cache first unless force refresh
+
       if (!forceRefresh) {
         final cachedRequests = await _getCachedFriendRequests();
-        
+
         if (cachedRequests != null) {
           if (mounted) {
             setState(() {
@@ -281,22 +332,19 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
         }
       }
 
-      // Cache miss or force refresh, fetch from database
       final requests = await FriendsService.getFriendRequests();
-      
-      // Cache the results
+
       await _cacheFriendRequests(requests);
-      
+
       _logger.i('✅ Loaded ${requests.length} friend requests');
-      
+
       setState(() {
         _friendRequests = requests;
         _isLoadingRequests = false;
       });
     } catch (e) {
       _logger.e('❌ Error loading friend requests: $e');
-      
-      // Try to use stale cache on error
+
       if (!forceRefresh) {
         final staleRequests = await _getCachedFriendRequests();
         if (staleRequests != null && mounted) {
@@ -307,9 +355,9 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
           return;
         }
       }
-      
+
       setState(() => _isLoadingRequests = false);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -326,23 +374,89 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
     }
   }
 
+  // 🔥 NEW: Load notifications
+  Future<void> _loadNotifications({bool forceRefresh = false}) async {
+    setState(() => _isLoadingNotifications = true);
+
+    try {
+      _logger.d('🔔 Loading notifications...');
+
+      if (!forceRefresh) {
+        final cachedNotifications = await _getCachedNotifications();
+
+        if (cachedNotifications != null) {
+          if (mounted) {
+            setState(() {
+              _notifications = cachedNotifications;
+              _isLoadingNotifications = false;
+            });
+          }
+          return;
+        }
+      }
+
+      final notifications = await FeedNotificationsService.getNotifications(
+        limit: 50,
+        offset: 0,
+      );
+
+      final grouped = FeedNotificationsService.groupNotificationsByPost(notifications);
+
+      await _cacheNotifications(grouped);
+
+      _logger.i('✅ Loaded ${grouped.length} notifications');
+
+      setState(() {
+        _notifications = grouped;
+        _isLoadingNotifications = false;
+      });
+    } catch (e) {
+      _logger.e('❌ Error loading notifications: $e');
+
+      if (!forceRefresh) {
+        final staleNotifications = await _getCachedNotifications();
+        if (staleNotifications != null && mounted) {
+          setState(() {
+            _notifications = staleNotifications;
+            _isLoadingNotifications = false;
+          });
+          return;
+        }
+      }
+
+      setState(() => _isLoadingNotifications = false);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Unable to load notifications'),
+            backgroundColor: Colors.red,
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: () => _loadNotifications(forceRefresh: true),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _acceptFriendRequest(String requestId) async {
     try {
       _logger.d('✅ Accepting friend request: $requestId');
       await FriendsService.acceptFriendRequest(requestId);
-      
-      // Invalidate both caches (new friend = new chat possibility)
+
       await _invalidateRequestsCache();
       await _invalidateChatsCache();
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Friend request accepted!'),
           backgroundColor: Colors.green,
         ),
       );
-      
-      // Refresh both tabs with force refresh
+
       _loadData(forceRefresh: true);
     } catch (e) {
       _logger.e('❌ Error accepting request: $e');
@@ -359,24 +473,63 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
     try {
       _logger.d('❌ Declining friend request: $requestId');
       await FriendsService.declineFriendRequest(requestId);
-      
-      // Invalidate requests cache
+
       await _invalidateRequestsCache();
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Friend request declined'),
           backgroundColor: Colors.orange,
         ),
       );
-      
-      // Refresh requests tab with force refresh
+
       _loadFriendRequests(forceRefresh: true);
     } catch (e) {
       _logger.e('❌ Error declining request: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error declining request: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // 🔥 NEW: Mark notification as read and invalidate cache
+  Future<void> _markNotificationAsRead(String notificationId) async {
+    try {
+      await FeedNotificationsService.markAsRead(notificationId);
+      await _invalidateNotificationsCache();
+
+      setState(() {
+        final index = _notifications.indexWhere((n) => n['id'] == notificationId);
+        if (index != -1) {
+          _notifications[index]['is_read'] = true;
+        }
+      });
+    } catch (e) {
+      _logger.e('❌ Error marking notification as read: $e');
+    }
+  }
+
+  // 🔥 NEW: Mark all notifications as read
+  Future<void> _markAllNotificationsAsRead() async {
+    try {
+      await FeedNotificationsService.markAllAsRead();
+      await _invalidateNotificationsCache();
+      _loadNotifications(forceRefresh: true);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('All notifications marked as read'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      _logger.e('❌ Error marking all as read: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -395,6 +548,9 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    // 🔥 Calculate unread notification count
+    final unreadNotificationsCount = _notifications.where((n) => n['is_read'] == false).length;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Messages'),
@@ -443,9 +599,50 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
                 ],
               ),
             ),
+            // 🔥 NEW: Notifications tab
+            Tab(
+              text: 'Activity',
+              icon: Stack(
+                children: [
+                  Icon(Icons.notifications),
+                  if (unreadNotificationsCount > 0)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        padding: EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          '$unreadNotificationsCount',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ],
         ),
         actions: [
+          // 🔥 NEW: Mark all as read button (only show on notifications tab)
+          if (_tabController.index == 2 && unreadNotificationsCount > 0)
+            IconButton(
+              icon: Icon(Icons.done_all),
+              onPressed: _markAllNotificationsAsRead,
+              tooltip: 'Mark all as read',
+            ),
           IconButton(
             icon: Icon(Icons.person_search),
             onPressed: () async {
@@ -454,7 +651,6 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
                 MaterialPageRoute(builder: (_) => SearchUsersPage()),
               );
               if (result == true) {
-                // Friend request sent, invalidate requests cache
                 await _invalidateRequestsCache();
                 _loadFriendRequests(forceRefresh: true);
               }
@@ -474,10 +670,13 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
         children: [
           _buildChatsTab(),
           _buildRequestsTab(),
+          _buildNotificationsTab(), // 🔥 NEW
         ],
       ),
     );
   }
+
+  // ========== CHATS TAB ==========
 
   Widget _buildChatsTab() {
     if (_isLoadingChats) {
@@ -497,7 +696,7 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
           final friend = chat['friend'];
           final lastMessage = chat['lastMessage'];
           final unreadCount = chat['unreadCount'] ?? 0;
-          
+
           return Card(
             margin: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             child: ListTile(
@@ -598,9 +797,8 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
                 ],
               ),
               onTap: () async {
-                // ✅ CRITICAL: Invalidate badge BEFORE opening chat
                 await MenuIconWithBadge.invalidateCache();
-                
+
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -611,12 +809,10 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
                     ),
                   ),
                 );
-                
-                // ✅ CRITICAL: Refresh badge AFTER returning from chat
+
                 await MessagingService.refreshUnreadBadge();
-                
+
                 if (result == true) {
-                  // Message sent, invalidate cache and reload
                   await _invalidateChatsCache();
                   _loadChats(forceRefresh: true);
                 }
@@ -627,6 +823,8 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
       ),
     );
   }
+
+  // ========== REQUESTS TAB ==========
 
   Widget _buildRequestsTab() {
     if (_isLoadingRequests) {
@@ -644,7 +842,7 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
         itemBuilder: (context, index) {
           final request = _friendRequests[index];
           final sender = request['sender'];
-          
+
           return Card(
             margin: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             child: ListTile(
@@ -685,6 +883,290 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
       ),
     );
   }
+
+  // ========== NOTIFICATIONS TAB ==========
+
+  Widget _buildNotificationsTab() {
+    if (_isLoadingNotifications) {
+      return Center(child: CircularProgressIndicator());
+    }
+
+    if (_notifications.isEmpty) {
+      return _buildEmptyNotificationsState();
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => _loadNotifications(forceRefresh: true),
+      child: ListView.builder(
+        itemCount: _notifications.length,
+        itemBuilder: (context, index) {
+          final notification = _notifications[index];
+          return _buildNotificationItem(notification);
+        },
+      ),
+    );
+  }
+
+  Widget _buildNotificationItem(Map<String, dynamic> notification) {
+    final type = notification['type']?.toString();
+    final actorUsername = notification['actor_username']?.toString() ?? 'Someone';
+    final isRead = notification['is_read'] == true;
+    final isGrouped = notification['is_grouped'] == true;
+    final postPreview = notification['post_preview'] as Map<String, dynamic>?;
+    final postDeleted = notification['post_deleted'] == true;
+
+    IconData icon;
+    Color iconColor;
+    String actionText;
+
+    switch (type) {
+      case 'like':
+        icon = Icons.favorite;
+        iconColor = Colors.red;
+        actionText = isGrouped ? notification['display_text'] : 'liked your post';
+        break;
+      case 'comment':
+        icon = Icons.comment;
+        iconColor = Colors.blue;
+        actionText = isGrouped ? notification['display_text'] : 'commented on your post';
+        break;
+      case 'comment_like':
+        icon = Icons.favorite_border;
+        iconColor = Colors.pink;
+        actionText = isGrouped ? notification['display_text'] : 'liked your comment';
+        break;
+      case 'comment_reply':
+        icon = Icons.reply;
+        iconColor = Colors.purple;
+        actionText = isGrouped ? notification['display_text'] : 'replied to your comment';
+        break;
+      case 'save':
+        icon = Icons.bookmark;
+        iconColor = Colors.green;
+        actionText = isGrouped ? notification['display_text'] : 'saved your post';
+        break;
+      case 'tag':
+        icon = Icons.alternate_email;
+        iconColor = Colors.teal;
+        actionText = isGrouped ? notification['display_text'] : 'tagged you in a post';
+        break;
+      default:
+        icon = Icons.notifications;
+        iconColor = Colors.grey;
+        actionText = 'interacted with your post';
+    }
+
+    return Card(
+      margin: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      color: isRead ? Colors.white : Colors.green.shade50,
+      child: ListTile(
+        leading: Stack(
+          children: [
+            CircleAvatar(
+              backgroundColor: iconColor.withOpacity(0.2),
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            if (!isRead)
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        title: RichText(
+          text: TextSpan(
+            style: TextStyle(
+              color: Colors.black87,
+              fontSize: 14,
+            ),
+            children: [
+              TextSpan(
+                text: actorUsername,
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              TextSpan(text: ' '),
+              TextSpan(
+                text: isGrouped ? '' : actionText,
+              ),
+            ],
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (isGrouped)
+              Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text(
+                  actionText,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ),
+            if ((type == 'comment' || type == 'comment_reply') && !isGrouped && notification['content'] != null)
+              Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text(
+                  '"${notification['content']}"',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic,
+                    color: Colors.grey.shade600,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            if (postDeleted)
+              Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text(
+                  '(Post deleted)',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.red,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              )
+            else if (postPreview != null)
+              Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Row(
+                  children: [
+                    if (postPreview['photo_url'] != null)
+                      Container(
+                        width: 40,
+                        height: 40,
+                        margin: EdgeInsets.only(right: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(4),
+                          image: DecorationImage(
+                            image: NetworkImage(postPreview['photo_url']),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                    Expanded(
+                      child: Text(
+                        postPreview['content']?.toString() ?? '',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            SizedBox(height: 4),
+            Text(
+              _formatMessageTime(notification['created_at']),
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade500,
+              ),
+            ),
+          ],
+        ),
+        trailing: !isRead
+            ? Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  shape: BoxShape.circle,
+                ),
+              )
+            : null,
+        onTap: () async {
+          if (!isRead) {
+            await _markNotificationAsRead(notification['id'].toString());
+          }
+          if (!postDeleted) {
+            // TODO: Navigate to post detail page
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Opening post...'),
+                backgroundColor: Colors.blue,
+              ),
+            );
+          }
+        },
+        onLongPress: () {
+          _showNotificationOptions(notification);
+        },
+      ),
+    );
+  }
+
+  void _showNotificationOptions(Map<String, dynamic> notification) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.check, color: Colors.green),
+              title: Text('Mark as read'),
+              onTap: () async {
+                Navigator.pop(context);
+                await _markNotificationAsRead(notification['id'].toString());
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.delete, color: Colors.red),
+              title: Text('Delete'),
+              onTap: () async {
+                Navigator.pop(context);
+                try {
+                  await FeedNotificationsService.deleteNotification(
+                    notification['id'].toString(),
+                  );
+                  await _invalidateNotificationsCache();
+                  _loadNotifications(forceRefresh: true);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Notification deleted'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.cancel, color: Colors.grey),
+              title: Text('Cancel'),
+              onTap: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ========== EMPTY STATES ==========
 
   Widget _buildEmptyChatsState() {
     return Center(
@@ -821,30 +1303,78 @@ class _MessagesPageState extends State<MessagesPage> with SingleTickerProviderSt
     );
   }
 
+  Widget _buildEmptyNotificationsState() {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.notifications_none,
+              size: 80,
+              color: Colors.grey[400],
+            ),
+            SizedBox(height: 24),
+            Text(
+              'No notifications yet',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[600],
+              ),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'When people like, comment, or save\nyour posts, you\'ll see it here!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[500],
+                height: 1.4,
+              ),
+            ),
+            SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(context, '/home');
+              },
+              icon: Icon(Icons.add),
+              label: Text('Create Your First Post'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ========== HELPERS ==========
+
   String _formatMessageTime(String? timestamp) {
     if (timestamp == null) return '';
-    
+
     try {
       final utcDateTime = DateTime.parse(timestamp);
       final localDateTime = utcDateTime.toLocal();
-      
+
       final now = DateTime.now();
       final difference = now.difference(localDateTime);
-      
+
       if (difference.inDays == 0 && localDateTime.day == now.day) {
         return DateFormat('h:mm a').format(localDateTime);
-      }
-      else if (difference.inDays == 1 || 
-               (localDateTime.day == now.day - 1 && localDateTime.month == now.month)) {
+      } else if (difference.inDays == 1 ||
+          (localDateTime.day == now.day - 1 && localDateTime.month == now.month)) {
         return 'Yesterday';
-      }
-      else if (difference.inDays < 7) {
+      } else if (difference.inDays < 7) {
         return DateFormat('EEE').format(localDateTime);
-      }
-      else if (localDateTime.year == now.year) {
+      } else if (localDateTime.year == now.year) {
         return DateFormat('MMM d').format(localDateTime);
-      }
-      else {
+      } else {
         return DateFormat('MMM d, y').format(localDateTime);
       }
     } catch (e) {

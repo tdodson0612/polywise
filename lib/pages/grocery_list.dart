@@ -1,4 +1,4 @@
-// lib/pages/grocery_list.dart - PCOS conversion
+// lib/pages/grocery_list.dart - UPDATED: Keyboard fix, error handling, scroll, dropdown units
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,10 +21,36 @@ class _GroceryListPageState extends State<GroceryListPage> {
   List<Map<String, TextEditingController>> itemControllers = [];
   bool isLoading = true;
   bool isSaving = false;
+  String? _errorMessage;
+
+  // Multi-select mode
   bool isMultiSelectMode = false;
   Set<int> selectedIndices = {};
 
+  // ✅ Scroll controller to auto-scroll when keyboard appears
+  final ScrollController _scrollController = ScrollController();
+
+  // Cache configuration
   static const Duration _listCacheDuration = Duration(minutes: 5);
+
+  // 🔥 MEASUREMENT UNITS DROPDOWN
+  final List<String> _measurementUnits = [
+    'oz',
+    'lb',
+    'g',
+    'kg',
+    'cup',
+    'tbsp',
+    'tsp',
+    'ml',
+    'L',
+    'piece',
+    'can',
+    'bag',
+    'box',
+    'bunch',
+    'pkg',
+  ];
 
   @override
   void initState() {
@@ -32,21 +58,56 @@ class _GroceryListPageState extends State<GroceryListPage> {
     _initializeUser();
   }
 
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    for (var controllers in itemControllers) {
+      controllers['name']?.dispose();
+      controllers['quantity']?.dispose();
+      controllers['measurement']?.dispose();
+    }
+    super.dispose();
+  }
+
   Future<void> _initializeUser() async {
+    if (!mounted) return;
+
     setState(() {
       isLoading = true;
+      _errorMessage = null;
     });
 
     try {
-      AuthService.ensureUserAuthenticated();
+      try {
+        AuthService.ensureUserAuthenticated();
+      } catch (e) {
+        print('❌ Authentication check failed: $e');
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/login');
+        }
+        return;
+      }
+
       await _loadGroceryList();
-      
-      if (widget.initialItem != null && widget.initialItem!.isNotEmpty) {
+
+      if (widget.initialItem != null && widget.initialItem!.isNotEmpty && mounted) {
         _addScannedItem(widget.initialItem!);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('❌ Error initializing grocery list: $e');
+      print('Stack trace: $stackTrace');
+
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/login');
+        setState(() {
+          _errorMessage = 'Failed to initialize grocery list';
+          itemControllers = [
+            {
+              'quantity': TextEditingController(),
+              'measurement': TextEditingController(),
+              'name': TextEditingController(),
+            }
+          ];
+        });
       }
     } finally {
       if (mounted) {
@@ -58,63 +119,61 @@ class _GroceryListPageState extends State<GroceryListPage> {
   }
 
   void _addScannedItem(String item) {
-    if (mounted) {
-      setState(() {
-        if (itemControllers.isNotEmpty && 
-            itemControllers.last['name']!.text.isEmpty) {
-          itemControllers.last['name']!.dispose();
-          itemControllers.last['quantity']!.dispose();
-          itemControllers.last['measurement']!.dispose();
-          itemControllers.removeLast();
-        }
+    if (!mounted) return;
 
-        final parsed = _parseItemText(item);
-        itemControllers.add({
-          'quantity': TextEditingController(text: parsed['quantity']!.isEmpty ? '1' : parsed['quantity']),
-          'measurement': TextEditingController(text: parsed['measurement']),
-          'name': TextEditingController(text: parsed['name']),
-        });
+    setState(() {
+      if (itemControllers.isNotEmpty &&
+          itemControllers.last['name']!.text.isEmpty) {
+        itemControllers.last['name']!.dispose();
+        itemControllers.last['quantity']!.dispose();
+        itemControllers.last['measurement']!.dispose();
+        itemControllers.removeLast();
+      }
 
-        itemControllers.add({
-          'quantity': TextEditingController(),
-          'measurement': TextEditingController(),
-          'name': TextEditingController(),
-        });
+      final parsed = _parseItemText(item);
+      itemControllers.add({
+        'quantity': TextEditingController(text: parsed['quantity']!.isEmpty ? '1' : parsed['quantity']),
+        'measurement': TextEditingController(text: parsed['measurement']),
+        'name': TextEditingController(text: parsed['name']),
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('✅ Added "$item" to grocery list'),
-          backgroundColor: Colors.green,
-          action: SnackBarAction(
-            label: 'Save',
-            textColor: Colors.white,
-            onPressed: _saveGroceryList,
-          ),
+      itemControllers.add({
+        'quantity': TextEditingController(),
+        'measurement': TextEditingController(),
+        'name': TextEditingController(),
+      });
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('✅ Added "$item" to grocery list'),
+        backgroundColor: Colors.green,
+        action: SnackBarAction(
+          label: 'Save',
+          textColor: Colors.white,
+          onPressed: _saveGroceryList,
         ),
-      );
-    }
+      ),
+    );
   }
 
   Future<List<GroceryItem>?> _getCachedGroceryList() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final cached = prefs.getString('grocery_list');
-      
       if (cached == null) return null;
-      
+
       final data = json.decode(cached);
       final timestamp = data['_cached_at'] as int?;
-      
       if (timestamp == null) return null;
-      
+
       final age = DateTime.now().millisecondsSinceEpoch - timestamp;
       if (age > _listCacheDuration.inMilliseconds) return null;
-      
+
       final items = (data['items'] as List)
           .map((e) => GroceryItem.fromJson(e))
           .toList();
-      
+
       print('📦 Using cached grocery list (${items.length} items)');
       return items;
     } catch (e) {
@@ -177,127 +236,140 @@ class _GroceryListPageState extends State<GroceryListPage> {
     };
   }
 
+  // ✅ Extracted reusable method to populate controllers from items
+  void _populateControllersFromItems(List<GroceryItem> items) {
+    if (!mounted) return;
+
+    setState(() {
+      for (var controllers in itemControllers) {
+        controllers['name']?.dispose();
+        controllers['quantity']?.dispose();
+        controllers['measurement']?.dispose();
+      }
+
+      itemControllers = items.map((item) {
+        final parsed = _parseItemText(item.item);
+        return {
+          'quantity': TextEditingController(text: parsed['quantity']),
+          'measurement': TextEditingController(text: parsed['measurement']),
+          'name': TextEditingController(text: parsed['name']),
+        };
+      }).toList();
+
+      if (itemControllers.isEmpty) {
+        itemControllers.add({
+          'quantity': TextEditingController(),
+          'measurement': TextEditingController(),
+          'name': TextEditingController(),
+        });
+      }
+
+      itemControllers.add({
+        'quantity': TextEditingController(),
+        'measurement': TextEditingController(),
+        'name': TextEditingController(),
+      });
+    });
+  }
+
   Future<void> _loadGroceryList({bool forceRefresh = false}) async {
+    if (!mounted) return;
+
+    print('🔄 Loading grocery list (forceRefresh: $forceRefresh)...');
+
     try {
       if (!forceRefresh) {
         final cachedItems = await _getCachedGroceryList();
-        if (cachedItems != null) {
-          if (mounted) {
-            setState(() {
-              itemControllers = cachedItems.map((item) {
-                final parsed = _parseItemText(item.item);
-                return {
-                  'quantity': TextEditingController(text: parsed['quantity']),
-                  'measurement': TextEditingController(text: parsed['measurement']),
-                  'name': TextEditingController(text: parsed['name']),
-                };
-              }).toList();
-
-              if (itemControllers.isEmpty) {
-                itemControllers.add({
-                  'quantity': TextEditingController(),
-                  'measurement': TextEditingController(),
-                  'name': TextEditingController(),
-                });
-              }
-
-              itemControllers.add({
-                'quantity': TextEditingController(),
-                'measurement': TextEditingController(),
-                'name': TextEditingController(),
-              });
-            });
-          }
+        if (cachedItems != null && mounted) {
+          print('✅ Loaded ${cachedItems.length} items from cache');
+          _populateControllersFromItems(cachedItems);
           return;
         }
       }
 
-      final List<GroceryItem> groceryItems = await GroceryService.getGroceryList();
+      List<GroceryItem> groceryItems;
+      try {
+        print('🌐 Fetching grocery list from service...');
+        groceryItems = await GroceryService.getGroceryList();
+        print('✅ Fetched ${groceryItems.length} items from service');
+      } catch (e, stackTrace) {
+        print('❌ Error fetching from service: $e');
+        print('Stack trace: $stackTrace');
+
+        final staleItems = await _getCachedGroceryList();
+        if (staleItems != null && mounted) {
+          print('⚠️ Using stale cache as fallback (${staleItems.length} items)');
+          _populateControllersFromItems(staleItems);
+
+          setState(() {
+            _errorMessage = 'Using offline data. Some items may be outdated.';
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Failed to load latest grocery list. Showing cached data.'),
+              backgroundColor: Colors.orange,
+              action: SnackBarAction(
+                label: 'Retry',
+                textColor: Colors.white,
+                onPressed: () => _loadGroceryList(forceRefresh: true),
+              ),
+            ),
+          );
+          return;
+        }
+
+        print('⚠️ No cache available, creating empty list');
+        if (mounted) {
+          setState(() {
+            itemControllers = [
+              {
+                'quantity': TextEditingController(),
+                'measurement': TextEditingController(),
+                'name': TextEditingController(),
+              }
+            ];
+            _errorMessage = 'Unable to load grocery list. Please check your connection.';
+          });
+
+          await ErrorHandlingService.handleError(
+            context: context,
+            error: e,
+            category: ErrorHandlingService.databaseError,
+            customMessage: 'Unable to load grocery list',
+            onRetry: () => _loadGroceryList(forceRefresh: true),
+          );
+        }
+        return;
+      }
+
       await _cacheGroceryList(groceryItems);
 
       if (mounted) {
+        _populateControllersFromItems(groceryItems);
         setState(() {
-          itemControllers = groceryItems.map((item) {
-            final parsed = _parseItemText(item.item);
-            return {
-              'quantity': TextEditingController(text: parsed['quantity']),
-              'measurement': TextEditingController(text: parsed['measurement']),
-              'name': TextEditingController(text: parsed['name']),
-            };
-          }).toList();
-
-          if (itemControllers.isEmpty) {
-            itemControllers.add({
-              'quantity': TextEditingController(),
-              'measurement': TextEditingController(),
-              'name': TextEditingController(),
-            });
-          }
-
-          itemControllers.add({
-            'quantity': TextEditingController(),
-            'measurement': TextEditingController(),
-            'name': TextEditingController(),
-          });
+          _errorMessage = null;
         });
       }
-    } catch (e) {
-      if (mounted) {
-        final staleItems = await _getCachedGroceryList();
-        if (staleItems != null) {
-          setState(() {
-            itemControllers = staleItems.map((item) {
-              final parsed = _parseItemText(item.item);
-              return {
-                'quantity': TextEditingController(text: parsed['quantity']),
-                'measurement': TextEditingController(text: parsed['measurement']),
-                'name': TextEditingController(text: parsed['name']),
-              };
-            }).toList();
+    } catch (e, stackTrace) {
+      print('❌ Unexpected error in _loadGroceryList: $e');
+      print('Stack trace: $stackTrace');
 
-            if (itemControllers.isEmpty) {
-              itemControllers.add({
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Unexpected error loading grocery list';
+          if (itemControllers.isEmpty) {
+            itemControllers = [
+              {
                 'quantity': TextEditingController(),
                 'measurement': TextEditingController(),
                 'name': TextEditingController(),
-              });
-            }
-
-            itemControllers.add({
-              'quantity': TextEditingController(),
-              'measurement': TextEditingController(),
-              'name': TextEditingController(),
-            });
-          });
-          return;
-        }
-
-        setState(() {
-          itemControllers = [{
-            'quantity': TextEditingController(),
-            'measurement': TextEditingController(),
-            'name': TextEditingController(),
-          }];
+              }
+            ];
+          }
         });
-
-        await ErrorHandlingService.handleError(
-          context: context,
-          error: e,
-          category: ErrorHandlingService.databaseError,
-          customMessage: 'Error loading grocery list',
-        );
       }
     }
-  }
-
-  @override
-  void dispose() {
-    for (var controllers in itemControllers) {
-      controllers['name']!.dispose();
-      controllers['quantity']!.dispose();
-      controllers['measurement']!.dispose();
-    }
-    super.dispose();
   }
 
   void _addNewItem() {
@@ -308,14 +380,25 @@ class _GroceryListPageState extends State<GroceryListPage> {
         'name': TextEditingController(),
       });
     });
+
+    // ✅ Scroll to bottom after adding new item
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   void _removeItem(int index) {
     if (itemControllers.length > 1) {
       setState(() {
-        itemControllers[index]['name']!.dispose();
-        itemControllers[index]['quantity']!.dispose();
-        itemControllers[index]['measurement']!.dispose();
+        itemControllers[index]['name']?.dispose();
+        itemControllers[index]['quantity']?.dispose();
+        itemControllers[index]['measurement']?.dispose();
         itemControllers.removeAt(index);
         selectedIndices.remove(index);
       });
@@ -358,12 +441,11 @@ class _GroceryListPageState extends State<GroceryListPage> {
           final name = itemControllers[i]['name']!.text.trim();
           final quantity = itemControllers[i]['quantity']!.text.trim();
           final measurement = itemControllers[i]['measurement']!.text.trim();
-          
+
           List<String> parts = [];
           if (quantity.isNotEmpty) parts.add(quantity);
           if (measurement.isNotEmpty) parts.add(measurement);
           parts.add(name);
-          
           return parts.join(' ');
         })
         .toList();
@@ -412,9 +494,7 @@ class _GroceryListPageState extends State<GroceryListPage> {
     final index = selectedIndices.first;
     final ingredientName = itemControllers[index]['name']!.text.trim();
 
-    if (ingredientName.isEmpty) {
-      return;
-    }
+    if (ingredientName.isEmpty) return;
 
     showDialog(
       context: context,
@@ -425,33 +505,33 @@ class _GroceryListPageState extends State<GroceryListPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'Common substitutes:',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
-              SizedBox(height: 12),
-              ..._getCommonSubstitutes(ingredientName).map((sub) => 
+              const SizedBox(height: 12),
+              ..._getCommonSubstitutes(ingredientName).map((sub) =>
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Row(
                     children: [
-                      Icon(Icons.swap_horiz, color: Colors.green, size: 20),
-                      SizedBox(width: 8),
+                      const Icon(Icons.swap_horiz, color: Colors.green, size: 20),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           sub['name']!,
-                          style: TextStyle(fontSize: 14),
+                          style: const TextStyle(fontSize: 14),
                         ),
                       ),
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
                           color: _getHealthScoreColor(sub['healthScore']!),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           '${sub['healthScore']}%',
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -468,7 +548,7 @@ class _GroceryListPageState extends State<GroceryListPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Close'),
+            child: const Text('Close'),
           ),
         ],
       ),
@@ -535,6 +615,8 @@ class _GroceryListPageState extends State<GroceryListPage> {
   }
 
   Future<void> _saveGroceryList() async {
+    if (!mounted) return;
+
     setState(() {
       isSaving = true;
     });
@@ -546,12 +628,11 @@ class _GroceryListPageState extends State<GroceryListPage> {
             final name = controllers['name']!.text.trim();
             final quantity = controllers['quantity']!.text.trim();
             final measurement = controllers['measurement']!.text.trim();
-            
+
             List<String> parts = [];
             if (quantity.isNotEmpty) parts.add(quantity);
             if (measurement.isNotEmpty) parts.add(measurement);
             parts.add(name);
-            
             return parts.join(' ');
           })
           .toList();
@@ -568,13 +649,31 @@ class _GroceryListPageState extends State<GroceryListPage> {
         return;
       }
 
-      await GroceryService.saveGroceryList(items);
+      print('💾 Saving ${items.length} items to grocery list...');
+
+      try {
+        await GroceryService.saveGroceryList(items);
+        print('✅ Grocery list saved successfully');
+      } catch (e, stackTrace) {
+        print('❌ Error saving to service: $e');
+        print('Stack trace: $stackTrace');
+        rethrow;
+      }
+
       await _invalidateGroceryListCache();
 
-      final freshItems = await GroceryService.getGroceryList();
-      await _cacheGroceryList(freshItems);
+      try {
+        final freshItems = await GroceryService.getGroceryList();
+        await _cacheGroceryList(freshItems);
+      } catch (e) {
+        print('⚠️ Warning: Could not refresh cache after save: $e');
+      }
 
       if (mounted) {
+        setState(() {
+          _errorMessage = null;
+        });
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('✅ Saved ${items.length} item${items.length == 1 ? '' : 's'}!'),
@@ -583,13 +682,17 @@ class _GroceryListPageState extends State<GroceryListPage> {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('❌ Error in _saveGroceryList: $e');
+      print('Stack trace: $stackTrace');
+
       if (mounted) {
         await ErrorHandlingService.handleError(
           context: context,
           error: e,
           category: ErrorHandlingService.databaseError,
           customMessage: 'Error saving grocery list',
+          onRetry: _saveGroceryList,
         );
       }
     } finally {
@@ -621,17 +724,27 @@ class _GroceryListPageState extends State<GroceryListPage> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
     try {
-      await GroceryService.clearGroceryList();
+      print('🗑️ Clearing grocery list...');
+
+      try {
+        await GroceryService.clearGroceryList();
+        print('✅ Grocery list cleared successfully');
+      } catch (e, stackTrace) {
+        print('❌ Error clearing grocery list: $e');
+        print('Stack trace: $stackTrace');
+        rethrow;
+      }
+
       await _invalidateGroceryListCache();
 
       if (mounted) {
         for (var controllers in itemControllers) {
-          controllers['name']!.dispose();
-          controllers['quantity']!.dispose();
-          controllers['measurement']!.dispose();
+          controllers['name']?.dispose();
+          controllers['quantity']?.dispose();
+          controllers['measurement']?.dispose();
         }
 
         setState(() {
@@ -644,6 +757,7 @@ class _GroceryListPageState extends State<GroceryListPage> {
           ];
           selectedIndices.clear();
           isMultiSelectMode = false;
+          _errorMessage = null;
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -654,13 +768,17 @@ class _GroceryListPageState extends State<GroceryListPage> {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('❌ Error in _clearGroceryList: $e');
+      print('Stack trace: $stackTrace');
+
       if (mounted) {
         await ErrorHandlingService.handleError(
           context: context,
           error: e,
           category: ErrorHandlingService.databaseError,
           customMessage: 'Error clearing grocery list',
+          onRetry: _clearGroceryList,
         );
       }
     }
@@ -677,7 +795,7 @@ class _GroceryListPageState extends State<GroceryListPage> {
         foregroundColor: Colors.white,
         leading: isMultiSelectMode
             ? IconButton(
-                icon: Icon(Icons.close),
+                icon: const Icon(Icons.close),
                 onPressed: _toggleMultiSelectMode,
               )
             : null,
@@ -712,6 +830,8 @@ class _GroceryListPageState extends State<GroceryListPage> {
           ],
         ],
       ),
+      // ✅ Prevent keyboard from covering input
+      resizeToAvoidBottomInset: true,
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Stack(
@@ -725,12 +845,53 @@ class _GroceryListPageState extends State<GroceryListPage> {
                     },
                   ),
                 ),
+                // ✅ SingleChildScrollView fixes keyboard covering inputs
                 RefreshIndicator(
                   onRefresh: () => _loadGroceryList(forceRefresh: true),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.only(
+                      left: 16,
+                      right: 16,
+                      top: 16,
+                      bottom: MediaQuery.of(context).viewInsets.bottom + 100,
+                    ),
                     child: Column(
                       children: [
+                        // ✅ Error banner
+                        if (_errorMessage != null)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.shade100,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.orange.shade300),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.warning_amber, color: Colors.orange.shade700),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: TextStyle(color: Colors.orange.shade900),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.close, size: 20),
+                                  onPressed: () {
+                                    setState(() {
+                                      _errorMessage = null;
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -761,13 +922,13 @@ class _GroceryListPageState extends State<GroceryListPage> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: isMultiSelectMode 
-                                      ? Colors.blue.shade100 
+                                  color: isMultiSelectMode
+                                      ? Colors.blue.shade100
                                       : Colors.green.shade100,
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                    color: isMultiSelectMode 
-                                        ? Colors.blue.shade300 
+                                    color: isMultiSelectMode
+                                        ? Colors.blue.shade300
                                         : Colors.green.shade300,
                                     width: 1,
                                   ),
@@ -777,8 +938,8 @@ class _GroceryListPageState extends State<GroceryListPage> {
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
-                                    color: isMultiSelectMode 
-                                        ? Colors.blue.shade700 
+                                    color: isMultiSelectMode
+                                        ? Colors.blue.shade700
                                         : Colors.green.shade700,
                                   ),
                                 ),
@@ -834,13 +995,13 @@ class _GroceryListPageState extends State<GroceryListPage> {
                                     onPressed: _findSubstitute,
                                     icon: const Icon(Icons.swap_horiz, size: 18),
                                     label: Text(
-                                      selectedIndices.length == 1 
-                                          ? 'Find Substitute' 
+                                      selectedIndices.length == 1
+                                          ? 'Find Substitute'
                                           : 'Find Substitute (select 1 item)',
                                     ),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: selectedIndices.length == 1 
-                                          ? Colors.orange 
+                                      backgroundColor: selectedIndices.length == 1
+                                          ? Colors.orange
                                           : Colors.grey,
                                       foregroundColor: Colors.white,
                                       padding: const EdgeInsets.symmetric(vertical: 10),
@@ -850,19 +1011,20 @@ class _GroceryListPageState extends State<GroceryListPage> {
                               ],
                             ),
                           ),
-                        
                         if (isMultiSelectMode && selectedIndices.isNotEmpty)
                           const SizedBox(height: 16),
 
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withAlpha((0.9 * 255).toInt()),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: itemControllers.isEmpty
-                                ? const Center(
+                        // 🔥 ITEMS LIST
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withAlpha((0.9 * 255).toInt()),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: itemControllers.isEmpty
+                              ? const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(32),
                                     child: Text(
                                       'No items yet. Start adding groceries!',
                                       style: TextStyle(
@@ -870,174 +1032,227 @@ class _GroceryListPageState extends State<GroceryListPage> {
                                         color: Colors.grey,
                                       ),
                                     ),
-                                  )
-                                : ListView.builder(
-                                    itemCount: itemControllers.length,
-                                    itemBuilder: (context, index) {
+                                  ),
+                                )
+                              : Column(
+                                  children: List.generate(
+                                    itemControllers.length,
+                                    (index) {
                                       final isSelected = selectedIndices.contains(index);
                                       final isEmpty = itemControllers[index]['name']!.text.trim().isEmpty;
 
                                       return Padding(
-                                        padding: const EdgeInsets.only(bottom: 12),
+                                        padding: const EdgeInsets.only(bottom: 16),
                                         child: InkWell(
                                           onTap: isMultiSelectMode && !isEmpty
                                               ? () => _toggleSelection(index)
                                               : null,
                                           child: Container(
-                                            padding: const EdgeInsets.all(8),
+                                            padding: const EdgeInsets.all(12),
                                             decoration: BoxDecoration(
-                                              color: isSelected 
-                                                  ? Colors.blue.shade50 
-                                                  : Colors.transparent,
-                                              borderRadius: BorderRadius.circular(8),
+                                              color: isSelected
+                                                  ? Colors.blue.shade50
+                                                  : Colors.grey.shade50,
+                                              borderRadius: BorderRadius.circular(12),
                                               border: Border.all(
-                                                color: isSelected 
-                                                    ? Colors.blue.shade300 
-                                                    : Colors.transparent,
+                                                color: isSelected
+                                                    ? Colors.blue.shade300
+                                                    : Colors.grey.shade300,
                                                 width: 2,
                                               ),
                                             ),
-                                            child: Row(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
-                                                if (isMultiSelectMode && !isEmpty)
-                                                  Padding(
-                                                    padding: const EdgeInsets.only(right: 8),
-                                                    child: Checkbox(
-                                                      value: isSelected,
-                                                      onChanged: (val) => _toggleSelection(index),
-                                                      activeColor: Colors.blue,
-                                                    ),
-                                                  )
-                                                else
-                                                  Container(
-                                                    width: 35,
-                                                    height: 35,
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.blue.shade100,
-                                                      shape: BoxShape.circle,
-                                                      border: Border.all(
-                                                        color: Colors.blue.shade300,
-                                                        width: 1,
-                                                      ),
-                                                    ),
-                                                    child: Center(
-                                                      child: Text(
-                                                        '${index + 1}',
-                                                        style: TextStyle(
-                                                          fontSize: 14,
-                                                          fontWeight: FontWeight.bold,
-                                                          color: Colors.blue.shade700,
+                                                // ROW 1: Number/Checkbox + Quantity + Unit dropdown + Delete
+                                                Row(
+                                                  children: [
+                                                    if (isMultiSelectMode && !isEmpty)
+                                                      Checkbox(
+                                                        value: isSelected,
+                                                        onChanged: (val) => _toggleSelection(index),
+                                                        activeColor: Colors.blue,
+                                                      )
+                                                    else
+                                                      Container(
+                                                        width: 40,
+                                                        height: 40,
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.blue.shade100,
+                                                          shape: BoxShape.circle,
+                                                          border: Border.all(
+                                                            color: Colors.blue.shade300,
+                                                            width: 2,
+                                                          ),
+                                                        ),
+                                                        child: Center(
+                                                          child: Text(
+                                                            '${index + 1}',
+                                                            style: TextStyle(
+                                                              fontSize: 16,
+                                                              fontWeight: FontWeight.bold,
+                                                              color: Colors.blue.shade700,
+                                                            ),
+                                                          ),
                                                         ),
                                                       ),
-                                                    ),
-                                                  ),
-                                                const SizedBox(width: 12),
+                                                    const SizedBox(width: 12),
 
-                                                SizedBox(
-                                                  width: 50,
-                                                  child: TextField(
-                                                    controller: itemControllers[index]['quantity'],
-                                                    decoration: InputDecoration(
-                                                      hintText: 'Qty',
-                                                      hintStyle: const TextStyle(fontSize: 11),
-                                                      border: OutlineInputBorder(
-                                                        borderRadius: BorderRadius.circular(8),
-                                                        borderSide: BorderSide(color: Colors.grey.shade300),
+                                                    // QUANTITY
+                                                    SizedBox(
+                                                      width: 70,
+                                                      child: TextField(
+                                                        controller: itemControllers[index]['quantity'],
+                                                        decoration: InputDecoration(
+                                                          labelText: 'Qty',
+                                                          labelStyle: TextStyle(
+                                                            fontSize: 12,
+                                                            color: Colors.grey.shade700,
+                                                          ),
+                                                          border: OutlineInputBorder(
+                                                            borderRadius: BorderRadius.circular(8),
+                                                            borderSide: BorderSide(color: Colors.grey.shade400),
+                                                          ),
+                                                          focusedBorder: OutlineInputBorder(
+                                                            borderRadius: BorderRadius.circular(8),
+                                                            borderSide: const BorderSide(color: Colors.green, width: 2),
+                                                          ),
+                                                          contentPadding: const EdgeInsets.symmetric(
+                                                            horizontal: 12,
+                                                            vertical: 14,
+                                                          ),
+                                                          filled: true,
+                                                          fillColor: Colors.white,
+                                                        ),
+                                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                                        inputFormatters: [
+                                                          FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                                                        ],
+                                                        style: const TextStyle(fontSize: 15),
+                                                        textAlign: TextAlign.center,
+                                                        enabled: !isMultiSelectMode,
                                                       ),
-                                                      focusedBorder: OutlineInputBorder(
-                                                        borderRadius: BorderRadius.circular(8),
-                                                        borderSide: const BorderSide(color: Colors.blue, width: 2),
-                                                      ),
-                                                      contentPadding: const EdgeInsets.symmetric(
-                                                        horizontal: 6,
-                                                        vertical: 8,
-                                                      ),
-                                                      filled: true,
-                                                      fillColor: Colors.grey.shade50,
                                                     ),
-                                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                                    inputFormatters: [
-                                                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                                                    ],
-                                                    style: const TextStyle(fontSize: 13),
-                                                    textAlign: TextAlign.center,
-                                                    enabled: !isMultiSelectMode,
-                                                  ),
+                                                    const SizedBox(width: 12),
+
+                                                    // MEASUREMENT DROPDOWN
+                                                    Expanded(
+                                                      child: DropdownButtonFormField<String>(
+                                                        value: itemControllers[index]['measurement']!.text.isEmpty
+                                                            ? null
+                                                            : (_measurementUnits.contains(itemControllers[index]['measurement']!.text)
+                                                                ? itemControllers[index]['measurement']!.text
+                                                                : null),
+                                                        decoration: InputDecoration(
+                                                          labelText: 'Unit',
+                                                          labelStyle: TextStyle(
+                                                            fontSize: 12,
+                                                            color: Colors.grey.shade700,
+                                                          ),
+                                                          border: OutlineInputBorder(
+                                                            borderRadius: BorderRadius.circular(8),
+                                                            borderSide: BorderSide(color: Colors.grey.shade400),
+                                                          ),
+                                                          focusedBorder: OutlineInputBorder(
+                                                            borderRadius: BorderRadius.circular(8),
+                                                            borderSide: const BorderSide(color: Colors.green, width: 2),
+                                                          ),
+                                                          contentPadding: const EdgeInsets.symmetric(
+                                                            horizontal: 12,
+                                                            vertical: 14,
+                                                          ),
+                                                          filled: true,
+                                                          fillColor: Colors.white,
+                                                        ),
+                                                        items: _measurementUnits.map((unit) {
+                                                          return DropdownMenuItem<String>(
+                                                            value: unit,
+                                                            child: Text(
+                                                              unit,
+                                                              style: const TextStyle(fontSize: 15),
+                                                            ),
+                                                          );
+                                                        }).toList(),
+                                                        onChanged: isMultiSelectMode
+                                                            ? null
+                                                            : (value) {
+                                                                if (value != null) {
+                                                                  itemControllers[index]['measurement']!.text = value;
+                                                                }
+                                                              },
+                                                        hint: const Text('Select', style: TextStyle(fontSize: 14)),
+                                                      ),
+                                                    ),
+
+                                                    // Delete button
+                                                    if (itemControllers.length > 1 && !isMultiSelectMode)
+                                                      Padding(
+                                                        padding: const EdgeInsets.only(left: 8),
+                                                        child: IconButton(
+                                                          icon: Icon(
+                                                            Icons.remove_circle,
+                                                            color: Colors.red.shade400,
+                                                            size: 28,
+                                                          ),
+                                                          padding: EdgeInsets.zero,
+                                                          constraints: const BoxConstraints(),
+                                                          onPressed: () => _removeItem(index),
+                                                        ),
+                                                      ),
+                                                  ],
                                                 ),
-                                                const SizedBox(width: 6),
 
-                                                SizedBox(
-                                                  width: 55,
-                                                  child: TextField(
-                                                    controller: itemControllers[index]['measurement'],
-                                                    decoration: InputDecoration(
-                                                      hintText: 'Unit',
-                                                      hintStyle: const TextStyle(fontSize: 11),
-                                                      border: OutlineInputBorder(
-                                                        borderRadius: BorderRadius.circular(8),
-                                                        borderSide: BorderSide(color: Colors.grey.shade300),
-                                                      ),
-                                                      focusedBorder: OutlineInputBorder(
-                                                        borderRadius: BorderRadius.circular(8),
-                                                        borderSide: const BorderSide(color: Colors.blue, width: 2),
-                                                      ),
-                                                      contentPadding: const EdgeInsets.symmetric(
-                                                        horizontal: 6,
-                                                        vertical: 8,
-                                                      ),
-                                                      filled: true,
-                                                      fillColor: Colors.grey.shade50,
+                                                const SizedBox(height: 12),
+
+                                                // ROW 2: ITEM NAME (full width)
+                                                TextField(
+                                                  controller: itemControllers[index]['name'],
+                                                  decoration: InputDecoration(
+                                                    labelText: 'Item Name',
+                                                    labelStyle: TextStyle(
+                                                      fontSize: 12,
+                                                      color: Colors.grey.shade700,
                                                     ),
-                                                    style: const TextStyle(fontSize: 13),
-                                                    textAlign: TextAlign.center,
-                                                    enabled: !isMultiSelectMode,
+                                                    hintText: 'Enter item name...',
+                                                    border: OutlineInputBorder(
+                                                      borderRadius: BorderRadius.circular(8),
+                                                      borderSide: BorderSide(color: Colors.grey.shade400),
+                                                    ),
+                                                    focusedBorder: OutlineInputBorder(
+                                                      borderRadius: BorderRadius.circular(8),
+                                                      borderSide: const BorderSide(color: Colors.green, width: 2),
+                                                    ),
+                                                    contentPadding: const EdgeInsets.symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 16,
+                                                    ),
+                                                    filled: true,
+                                                    fillColor: Colors.white,
                                                   ),
-                                                ),
-                                                const SizedBox(width: 6),
-
-                                                Expanded(
-                                                  child: TextField(
-                                                    controller: itemControllers[index]['name'],
-                                                    decoration: InputDecoration(
-                                                      hintText: 'Enter item name...',
-                                                      border: OutlineInputBorder(
-                                                        borderRadius: BorderRadius.circular(8),
-                                                        borderSide: BorderSide(color: Colors.grey.shade300),
-                                                      ),
-                                                      focusedBorder: OutlineInputBorder(
-                                                        borderRadius: BorderRadius.circular(8),
-                                                        borderSide: const BorderSide(color: Colors.blue, width: 2),
-                                                      ),
-                                                      contentPadding: const EdgeInsets.symmetric(
-                                                        horizontal: 12,
-                                                        vertical: 8,
-                                                      ),
-                                                      filled: true,
-                                                      fillColor: Colors.grey.shade50,
-                                                    ),
-                                                    onChanged: (text) {
-                                                      if (index == itemControllers.length - 1 && text.isNotEmpty) {
-                                                        _addNewItem();
+                                                  style: const TextStyle(fontSize: 16),
+                                                  onChanged: (text) {
+                                                    if (index == itemControllers.length - 1 && text.isNotEmpty) {
+                                                      _addNewItem();
+                                                    }
+                                                  },
+                                                  enabled: !isMultiSelectMode,
+                                                  // ✅ Auto-scroll when field is focused
+                                                  onTap: () {
+                                                    Future.delayed(const Duration(milliseconds: 500), () {
+                                                      if (_scrollController.hasClients) {
+                                                        final double offset = (index * 150.0).clamp(
+                                                          0.0,
+                                                          _scrollController.position.maxScrollExtent,
+                                                        );
+                                                        _scrollController.animateTo(
+                                                          offset,
+                                                          duration: const Duration(milliseconds: 300),
+                                                          curve: Curves.easeOut,
+                                                        );
                                                       }
-                                                    },
-                                                    enabled: !isMultiSelectMode,
-                                                  ),
+                                                    });
+                                                  },
                                                 ),
-
-                                                if (itemControllers.length > 1 && !isMultiSelectMode)
-                                                  Padding(
-                                                    padding: const EdgeInsets.only(left: 6),
-                                                    child: IconButton(
-                                                      icon: Icon(
-                                                        Icons.remove_circle,
-                                                        color: Colors.red.shade400,
-                                                        size: 22,
-                                                      ),
-                                                      padding: EdgeInsets.zero,
-                                                      constraints: const BoxConstraints(),
-                                                      onPressed: () => _removeItem(index),
-                                                    ),
-                                                  ),
                                               ],
                                             ),
                                           ),
@@ -1045,7 +1260,7 @@ class _GroceryListPageState extends State<GroceryListPage> {
                                       );
                                     },
                                   ),
-                          ),
+                                ),
                         ),
                         const SizedBox(height: 16),
 
@@ -1103,6 +1318,9 @@ class _GroceryListPageState extends State<GroceryListPage> {
                               ],
                             ),
                           ),
+
+                        // ✅ Extra spacing at bottom for keyboard
+                        const SizedBox(height: 200),
                       ],
                     ),
                   ),

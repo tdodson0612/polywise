@@ -32,6 +32,7 @@ import 'package:polywise/models/draft_recipe.dart';
 import 'package:polywise/services/draft_recipes_service.dart';
 import 'services/picture_service.dart';
 import 'package:polywise/widgets/tutorial_overlay.dart';
+import 'package:polywise/services/friends_service.dart'; 
 
 
 class Recipe {
@@ -303,6 +304,13 @@ class _HomePageState extends State<HomePage>
   Map<String, bool> _savedPosts = {};
   final Map<String, TextEditingController> _commentControllers = {};
 
+  // 🔥 NEW: Comment like tracking
+  Map<String, Map<String, bool>> _commentLikeStatus = {};
+  Map<String, Map<String, int>> _commentLikeCounts = {};
+
+  // 🔥 NEW: Reply tracking
+  Map<String, String?> _replyingToCommentId = {};
+  Map<String, Map<String, bool>> _expandedReplies = {};
 
 
   late final PremiumGateController _premiumController;
@@ -412,7 +420,13 @@ class _HomePageState extends State<HomePage>
     _interstitialAd?.dispose();
     _rewardedAd?.dispose();
     _searchController.dispose();
-    _feedScrollController.dispose(); // 🔥 NEW
+    _feedScrollController.dispose();
+    
+    // 🔥 NEW: Dispose comment controllers
+    for (var controller in _commentControllers.values) {
+      controller.dispose();
+    }
+    
     super.dispose();
   }
 
@@ -467,40 +481,86 @@ class _HomePageState extends State<HomePage>
 
   Future<void> _initializeAsync() async {
     try {
-      await Future.delayed(const Duration(milliseconds: 100));
+      if (AppConfig.enableDebugPrints) {
+        print("🏠 HOME: Starting initialization...");
+      }
+      
+      await Future.delayed(const Duration(milliseconds: 500));
       
       if (!mounted || _isDisposed) return;
       
-      await _premiumController.refresh();
+      final currentUserId = AuthService.currentUserId;
+      if (currentUserId == null) {
+        if (AppConfig.enableDebugPrints) {
+          print("⚠️ HOME: No user session found, skipping favorite load");
+        }
+        
+        if (mounted && !_isDisposed) {
+          setState(() => _favoriteRecipes = []);
+        }
+        
+        if (!_isPremium) {
+          _loadInterstitialAd();
+          _loadRewardedAd();
+        }
+        
+        return;
+      }
       
       if (AppConfig.enableDebugPrints) {
-        print("🔐 Premium status after refresh: $_isPremium");
+        print("✅ HOME: Session found: $currentUserId");
       }
+      
+      if (!mounted || _isDisposed) return;
+      
+      try {
+        await _premiumController.refresh();
+        
+        if (AppConfig.enableDebugPrints) {
+          print("🔐 HOME: Premium status: $_isPremium");
+        }
+      } catch (e) {
+        if (AppConfig.enableDebugPrints) {
+          print("⚠️ HOME: Premium check failed (non-critical): $e");
+        }
+      }
+      
+      if (!mounted || _isDisposed) return;
       
       if (!_isPremium) {
         if (AppConfig.enableDebugPrints) {
-          print("📺 Loading ads for FREE user");
+          print("📺 HOME: Loading ads for FREE user");
         }
         _loadInterstitialAd();
         _loadRewardedAd();
-      } else {
-        if (AppConfig.enableDebugPrints) {
-          print("🚫 Skipping ads for PREMIUM user");
-        }
       }
       
-      await _loadFavoriteRecipes();
-      await _syncFavoritesFromDatabase();
+      if (!mounted || _isDisposed) return;
+      
+      _loadFavoriteRecipes().then((_) {
+        if (AppConfig.enableDebugPrints) {
+          print("✅ HOME: Favorites loaded successfully");
+        }
+      }).catchError((e) {
+        if (AppConfig.enableDebugPrints) {
+          print("⚠️ HOME: Failed to load favorites (non-critical): $e");
+        }
+        if (mounted && !_isDisposed) {
+          setState(() => _favoriteRecipes = []);
+        }
+      });
+      
+      if (AppConfig.enableDebugPrints) {
+        print("✅ HOME: Initialization complete");
+      }
 
     } catch (e) {
-      if (mounted) {
-        await ErrorHandlingService.handleError(
-          context: context,
-          error: e,
-          category: ErrorHandlingService.initializationError,
-          showSnackBar: true,
-          customMessage: 'Failed to initialize home screen',
-        );
+      if (AppConfig.enableDebugPrints) {
+        print("❌ HOME: Initialization error: $e");
+      }
+      
+      if (mounted && !_isDisposed) {
+        setState(() => _favoriteRecipes = []);
       }
     }
   }
@@ -756,21 +816,40 @@ class _HomePageState extends State<HomePage>
   }
 
   Future<void> _loadFavoriteRecipes() async {
+    final userId = AuthService.currentUserId;
+    if (userId == null) {
+      if (AppConfig.enableDebugPrints) {
+        print('⚠️ Cannot load favorites: No user ID');
+      }
+      if (mounted && !_isDisposed) {
+        setState(() => _favoriteRecipes = []);
+      }
+      return;
+    }
+
     try {
+      AppConfig.debugPrint('📖 HOME: Starting to load favorite recipes for user: $userId');
+      
       final recipes = await FavoriteRecipesService.getFavoriteRecipes();
+      
+      AppConfig.debugPrint('✅ HOME: Loaded ${recipes.length} favorite recipes');
 
       if (mounted && !_isDisposed) {
         setState(() => _favoriteRecipes = recipes);
       }
     } catch (e) {
-      if (mounted) {
-        await ErrorHandlingService.handleError(
-          context: context,
-          error: e,
-          category: ErrorHandlingService.databaseError,
-          showSnackBar: true,
-          customMessage: 'Failed to load favorite recipes',
-        );
+      AppConfig.debugPrint('❌ HOME: Error loading favorites: $e');
+      
+      if (mounted && !_isDisposed) {
+        setState(() => _favoriteRecipes = []);
+      }
+      
+      final errorString = e.toString().toLowerCase();
+      if (!errorString.contains('session') && 
+          !errorString.contains('jwt') &&
+          !errorString.contains('no user') &&
+          !errorString.contains('not authenticated')) {
+        AppConfig.debugPrint('⚠️ HOME: Non-auth error loading favorites: $e');
       }
     }
   }
@@ -1521,12 +1600,25 @@ class _HomePageState extends State<HomePage>
                     ),
                     SizedBox(height: 16),
                     Text(
-                      'Sorry, please try again',
+                      'No Product Found',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                       ),
                       textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      'The barcode was not recognized in our database. Try:\n\n'
+                      '• Ensuring good lighting\n'
+                      '• Holding camera steady\n'
+                      '• Using Manual Code Entry\n'
+                      '• Searching by product name',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade700,
+                      ),
+                      textAlign: TextAlign.left,
                     ),
                     SizedBox(height: 24),
                     SizedBox(
@@ -2132,29 +2224,285 @@ class _HomePageState extends State<HomePage>
         setState(() {
           _postComments[postId] = comments;
         });
+        
+        // 🔥 NEW: Load like data for all comments and replies
+        await _loadCommentLikeData(postId, comments);
       }
     } catch (e) {
       AppConfig.debugPrint('❌ Error loading comments: $e');
     }
   }
 
-  Future<void> _postComment(String postId) async {
+  // 🔥 NEW: Load like data for all comments in a post
+  Future<void> _loadCommentLikeData(String postId, List<Map<String, dynamic>> comments) async {
+    try {
+      for (final comment in comments) {
+        final commentId = comment['id']?.toString();
+        if (commentId == null) continue;
+
+        final results = await Future.wait([
+          FeedPostsService.hasUserLikedComment(commentId),
+          FeedPostsService.getCommentLikeCount(commentId),
+        ]);
+
+        if (mounted) {
+          setState(() {
+            _commentLikeStatus.putIfAbsent(postId, () => {});
+            _commentLikeCounts.putIfAbsent(postId, () => {});
+            
+            _commentLikeStatus[postId]![commentId] = results[0] as bool;
+            _commentLikeCounts[postId]![commentId] = results[1] as int;
+          });
+        }
+
+        final replies = comment['replies'] as List<Map<String, dynamic>>?;
+        if (replies != null && replies.isNotEmpty) {
+          await _loadCommentLikeData(postId, replies);
+        }
+      }
+    } catch (e) {
+      AppConfig.debugPrint('❌ Error loading comment like data: $e');
+    }
+  }
+
+  // 🔥 NEW: Toggle like on a comment
+  Future<void> _toggleCommentLike(String postId, String commentId) async {
+    try {
+      final isCurrentlyLiked = _commentLikeStatus[postId]?[commentId] ?? false;
+      final currentCount = _commentLikeCounts[postId]?[commentId] ?? 0;
+
+      setState(() {
+        _commentLikeStatus.putIfAbsent(postId, () => {});
+        _commentLikeCounts.putIfAbsent(postId, () => {});
+        
+        _commentLikeStatus[postId]![commentId] = !isCurrentlyLiked;
+        _commentLikeCounts[postId]![commentId] = isCurrentlyLiked 
+          ? (currentCount - 1).clamp(0, 999999) 
+          : currentCount + 1;
+      });
+
+      if (isCurrentlyLiked) {
+        await FeedPostsService.unlikeComment(commentId);
+      } else {
+        await FeedPostsService.likeComment(commentId);
+      }
+
+      final actualCount = await FeedPostsService.getCommentLikeCount(commentId);
+      if (mounted) {
+        setState(() {
+          _commentLikeCounts[postId]![commentId] = actualCount;
+        });
+      }
+
+    } catch (e) {
+      final isCurrentlyLiked = _commentLikeStatus[postId]?[commentId] ?? false;
+      final currentCount = _commentLikeCounts[postId]?[commentId] ?? 0;
+      
+      setState(() {
+        _commentLikeStatus[postId]![commentId] = !isCurrentlyLiked;
+        _commentLikeCounts[postId]![commentId] = isCurrentlyLiked 
+          ? currentCount + 1 
+          : (currentCount - 1).clamp(0, 999999);
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update like: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // 🔥 NEW: Start replying to a comment
+  void _startReplyToComment(String postId, String commentId, String commenterUsername) {
+    setState(() {
+      _replyingToCommentId[postId] = commentId;
+    });
+
     final controller = _commentControllers[postId];
-    if (controller == null || controller.text.trim().isEmpty) return;
+    if (controller != null) {
+      controller.text = '@$commenterUsername ';
+      Future.delayed(Duration(milliseconds: 100), () {
+        if (mounted) {
+          FocusScope.of(context).requestFocus(FocusNode());
+        }
+      });
+    }
+  }
+
+  // 🔥 NEW: Cancel reply
+  void _cancelReply(String postId) {
+    setState(() {
+      _replyingToCommentId[postId] = null;
+    });
+    
+    final controller = _commentControllers[postId];
+    if (controller != null) {
+      controller.clear();
+    }
+  }
+
+  // 🔥 NEW: Toggle reply visibility for a comment
+  void _toggleReplies(String postId, String commentId) {
+    setState(() {
+      _expandedReplies.putIfAbsent(postId, () => {});
+      _expandedReplies[postId]![commentId] = !(_expandedReplies[postId]?[commentId] ?? false);
+    });
+  }
+
+  // 🔥 NEW: Extract tagged user IDs from content
+  Future<List<String>> _extractTaggedUserIds(String content) async {
+    final taggedUserIds = <String>[];
+    
+    try {
+      final mentionPattern = RegExp(r'@(\w+)');
+      final matches = mentionPattern.allMatches(content);
+      
+      final usernames = matches.map((m) => m.group(1)!).toSet();
+      
+      if (usernames.isEmpty) return [];
+
+      final allFriends = await FriendsService.getFriends();
+      
+      for (final username in usernames) {
+        try {
+          final matchedFriend = allFriends.firstWhere(
+            (friend) => friend['username']?.toString().toLowerCase() == username.toLowerCase(),
+            orElse: () => {},
+          );
+          
+          if (matchedFriend.isNotEmpty) {
+            final userId = matchedFriend['id']?.toString();
+            if (userId != null) {
+              taggedUserIds.add(userId);
+              AppConfig.debugPrint('✅ Tagged user found: $username ($userId)');
+            }
+          } else {
+            AppConfig.debugPrint('⚠️ User not in friends list: $username');
+          }
+        } catch (e) {
+          AppConfig.debugPrint('⚠️ Could not find user: $username');
+        }
+      }
+    } catch (e) {
+      AppConfig.debugPrint('❌ Error extracting tagged users: $e');
+    }
+    
+    return taggedUserIds;
+  }
+
+  // 🔥 NEW: Show friend picker dialog for tagging
+  Future<List<String>> _showFriendPickerDialog() async {
+    try {
+      final friends = await FriendsService.getFriends();
+      
+      if (friends.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('You don\'t have any friends yet to tag'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return [];
+      }
+
+      final selected = await showDialog<List<String>>(
+        context: context,
+        builder: (context) => _FriendPickerDialog(friends: friends),
+      );
+
+      return selected ?? [];
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error loading friends: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return [];
+    }
+  }
+
+  // 🔥 NEW: Show photo picker for comment attachment
+  Future<void> _pickCommentPhoto(String postId) async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+        maxWidth: 1920,
+        maxHeight: 1920,
+      );
+
+      if (pickedFile == null) return;
+
+      final File imageFile = File(pickedFile.path);
+      
+      await _postCommentOrReply(postId, photoFile: imageFile);
+
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to pick photo: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _postComment(String postId) async {
+    await _postCommentOrReply(postId);
+  }
+
+  // 🔥 UPDATED: Post a comment or reply
+  Future<void> _postCommentOrReply(String postId, {File? photoFile}) async {
+    final controller = _commentControllers[postId];
+    if (controller == null) return;
+    
+    final content = controller.text.trim();
+    final parentCommentId = _replyingToCommentId[postId];
+    
+    if (content.isEmpty && photoFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please write something or add a photo'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
 
     try {
+      String? photoUrl;
+      
+      if (photoFile != null) {
+        setState(() => _isLoading = true);
+        photoUrl = await PictureService.uploadFeedPhoto(photoFile);
+        setState(() => _isLoading = false);
+      }
+
+      final taggedUserIds = await _extractTaggedUserIds(content);
+
       await FeedPostsService.addComment(
         postId: postId,
-        content: controller.text.trim(),
+        content: content,
+        parentCommentId: parentCommentId,
+        photoUrl: photoUrl,
+        taggedUserIds: taggedUserIds.isNotEmpty ? taggedUserIds : null,
       );
 
       controller.clear();
+      _cancelReply(postId);
       await _loadComments(postId);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Comment posted!'),
+            content: Text(parentCommentId != null ? 'Reply posted!' : 'Comment posted!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -2163,7 +2511,7 @@ class _HomePageState extends State<HomePage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to post comment: ${e.toString()}'),
+            content: Text('Failed to post: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -5782,5 +6130,64 @@ class _HomePageState extends State<HomePage>
     
     // Mark ad as not ready
     _isRewardedAdReady = false;
+  }
+  }
+
+// 🔥 NEW: Friend Picker Dialog
+class _FriendPickerDialog extends StatefulWidget {
+  final List<Map<String, dynamic>> friends;
+
+  const _FriendPickerDialog({required this.friends});
+
+  @override
+  State<_FriendPickerDialog> createState() => _FriendPickerDialogState();
+}
+
+class _FriendPickerDialogState extends State<_FriendPickerDialog> {
+  final Set<String> _selectedFriendIds = {};
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Tag Friends'),
+      content: Container(
+        width: double.maxFinite,
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: widget.friends.length,
+          itemBuilder: (context, index) {
+            final friend = widget.friends[index];
+            final friendId = friend['id']?.toString() ?? '';
+            final friendUsername = friend['username']?.toString() ?? 'Unknown';
+            final isSelected = _selectedFriendIds.contains(friendId);
+
+            return CheckboxListTile(
+              title: Text(friendUsername),
+              value: isSelected,
+              activeColor: Colors.green,
+              onChanged: (selected) {
+                setState(() {
+                  if (selected == true) {
+                    _selectedFriendIds.add(friendId);
+                  } else {
+                    _selectedFriendIds.remove(friendId);
+                  }
+                });
+              },
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, _selectedFriendIds.toList()),
+          child: Text('Done'),
+        ),
+      ],
+    );
   }
 }
