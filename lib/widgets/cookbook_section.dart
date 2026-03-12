@@ -1,4 +1,4 @@
-// lib/widgets/cookbook_section.dart - COMPLETE WITH NUTRITION TABS
+// lib/widgets/cookbook_section.dart - COMPLETE WITH NUTRITION TABS AND SUBMIT BUTTON
 import 'package:flutter/material.dart';
 import 'package:polywise/widgets/nutrition_facts_label.dart';
 import 'package:polywise/models/nutrition_info.dart';
@@ -16,7 +16,6 @@ class CookbookSection extends StatefulWidget {
 class _CookbookSectionState extends State<CookbookSection> {
   List<CookbookRecipe> _recipes = [];
   bool _isLoading = true;
-  bool _isExpanded = true;
 
   @override
   void initState() {
@@ -26,12 +25,9 @@ class _CookbookSectionState extends State<CookbookSection> {
 
   Future<void> _loadRecipes() async {
     if (!mounted) return;
-
     setState(() => _isLoading = true);
-
     try {
       final recipes = await CookbookService.getCookbookRecipes();
-      
       if (mounted) {
         setState(() {
           _recipes = recipes;
@@ -40,7 +36,6 @@ class _CookbookSectionState extends State<CookbookSection> {
       }
     } catch (e) {
       AppConfig.debugPrint('Error loading cookbook: $e');
-      
       if (mounted) {
         setState(() {
           _recipes = [];
@@ -73,12 +68,11 @@ class _CookbookSectionState extends State<CookbookSection> {
       try {
         await CookbookService.removeFromCookbook(recipeId);
         await _loadRecipes();
-        
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Recipe removed from cookbook'),
-              backgroundColor: Colors.green,
+              backgroundColor: Colors.orange,
             ),
           );
         }
@@ -87,6 +81,98 @@ class _CookbookSectionState extends State<CookbookSection> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Failed to remove: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _submitRecipeForReview(CookbookRecipe recipe) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Submit to Community'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+                'Submit "${recipe.recipeName}" for PCOS nutrition expert review?'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.deepPurple.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.deepPurple.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline,
+                          size: 16, color: Colors.deepPurple.shade700),
+                      const SizedBox(width: 6),
+                      Text(
+                        'What happens next:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.deepPurple.shade900,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '• Our PCOS nutrition experts will review your recipe\n'
+                    '• If approved, it will be shared with the community\n'
+                    '• You\'ll be notified of the decision\n'
+                    '• Your recipe stays in your cookbook either way',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepPurple,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Submit for Review'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await CookbookService.submitRecipeForReview(recipe);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'Recipe submitted for review! Check "Submitted" tab for status.'),
+              backgroundColor: Colors.deepPurple,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to submit: ${e.toString()}'),
               backgroundColor: Colors.red,
             ),
           );
@@ -121,7 +207,7 @@ class _CookbookSectionState extends State<CookbookSection> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              
+
               // Header
               Padding(
                 padding: const EdgeInsets.all(16),
@@ -143,46 +229,41 @@ class _CookbookSectionState extends State<CookbookSection> {
                   ],
                 ),
               ),
-              
+
               const Divider(height: 1),
-              
+
               // Content with tabs if nutrition available
               Expanded(
                 child: recipe.nutrition != null
-                  ? DefaultTabController(
-                      length: 3,
-                      child: Column(
-                        children: [
-                          TabBar(
-                            labelColor: Colors.orange,
-                            unselectedLabelColor: Colors.grey,
-                            indicatorColor: Colors.orange,
-                            tabs: const [
-                              Tab(text: 'Recipe'),
-                              Tab(text: 'Nutrition'),
-                              Tab(text: 'Notes'),
-                            ],
-                          ),
-                          Expanded(
-                            child: TabBarView(
-                              children: [
-                                // Tab 1: Recipe
-                                _buildRecipeTab(recipe, scrollController),
-                                
-                                // Tab 2: Nutrition
-                                _buildNutritionTab(recipe, scrollController),
-                                
-                                // Tab 3: Notes
-                                _buildNotesTab(recipe, scrollController),
+                    ? DefaultTabController(
+                        length: 3,
+                        child: Column(
+                          children: [
+                            TabBar(
+                              labelColor: Colors.deepPurple,
+                              unselectedLabelColor: Colors.grey,
+                              indicatorColor: Colors.deepPurple,
+                              tabs: const [
+                                Tab(text: 'Recipe'),
+                                Tab(text: 'Nutrition'),
+                                Tab(text: 'Notes'),
                               ],
                             ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : _buildRecipeTab(recipe, scrollController),
+                            Expanded(
+                              child: TabBarView(
+                                children: [
+                                  _buildRecipeTab(recipe, scrollController),
+                                  _buildNutritionTab(recipe, scrollController),
+                                  _buildNotesTab(recipe, scrollController),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : _buildRecipeTab(recipe, scrollController),
               ),
-              
+
               // Actions
               Container(
                 padding: const EdgeInsets.all(16),
@@ -197,21 +278,54 @@ class _CookbookSectionState extends State<CookbookSection> {
                   ],
                 ),
                 child: SafeArea(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _deleteRecipe(recipe.id, recipe.recipeName);
-                    },
-                    icon: const Icon(Icons.delete, color: Colors.white),
-                    label: const Text(
-                      'Remove from Cookbook',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      minimumSize: const Size(double.infinity, 50),
-                    ),
+                  child: Column(
+                    children: [
+                      // Submit to Community button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _submitRecipeForReview(recipe);
+                          },
+                          icon: const Icon(Icons.send, color: Colors.white),
+                          label: const Text(
+                            'Submit to Community',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.deepPurple,
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      // Remove button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _deleteRecipe(recipe.id, recipe.recipeName);
+                          },
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          label: const Text(
+                            'Remove from Cookbook',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.red),
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -222,15 +336,15 @@ class _CookbookSectionState extends State<CookbookSection> {
     );
   }
 
-  Widget _buildRecipeTab(CookbookRecipe recipe, ScrollController scrollController) {
+  Widget _buildRecipeTab(
+      CookbookRecipe recipe, ScrollController scrollController) {
     return ListView(
       controller: scrollController,
       padding: const EdgeInsets.all(16),
       children: [
-        // Ingredients
         _buildSection(
           'Ingredients',
-          const Icon(Icons.shopping_basket, color: Colors.orange),
+          const Icon(Icons.shopping_basket, color: Colors.deepPurple),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: recipe.ingredients
@@ -242,10 +356,8 @@ class _CookbookSectionState extends State<CookbookSection> {
                         children: [
                           const Text('• ', style: TextStyle(fontSize: 16)),
                           Expanded(
-                            child: Text(
-                              ingredient.trim(),
-                              style: const TextStyle(fontSize: 15),
-                            ),
+                            child: Text(ingredient.trim(),
+                                style: const TextStyle(fontSize: 15)),
                           ),
                         ],
                       ),
@@ -253,13 +365,10 @@ class _CookbookSectionState extends State<CookbookSection> {
                 .toList(),
           ),
         ),
-        
         const SizedBox(height: 24),
-        
-        // Directions
         _buildSection(
           'Directions',
-          const Icon(Icons.format_list_numbered, color: Colors.orange),
+          const Icon(Icons.format_list_numbered, color: Colors.deepPurple),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: recipe.directions
@@ -277,7 +386,7 @@ class _CookbookSectionState extends State<CookbookSection> {
                             width: 24,
                             height: 24,
                             decoration: const BoxDecoration(
-                              color: Colors.orange,
+                              color: Colors.deepPurple,
                               shape: BoxShape.circle,
                             ),
                             child: Center(
@@ -293,10 +402,9 @@ class _CookbookSectionState extends State<CookbookSection> {
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: Text(
-                              '${entry.value.trim()}.',
-                              style: const TextStyle(fontSize: 15, height: 1.5),
-                            ),
+                            child: Text('${entry.value.trim()}.',
+                                style: const TextStyle(
+                                    fontSize: 15, height: 1.5)),
                           ),
                         ],
                       ),
@@ -308,7 +416,8 @@ class _CookbookSectionState extends State<CookbookSection> {
     );
   }
 
-  Widget _buildNutritionTab(CookbookRecipe recipe, ScrollController scrollController) {
+  Widget _buildNutritionTab(
+      CookbookRecipe recipe, ScrollController scrollController) {
     if (recipe.nutrition == null) {
       return Center(
         child: Padding(
@@ -318,20 +427,12 @@ class _CookbookSectionState extends State<CookbookSection> {
             children: [
               Icon(Icons.restaurant_menu, size: 64, color: Colors.grey[400]),
               const SizedBox(height: 16),
-              Text(
-                'No nutrition data available',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
-                ),
-              ),
+              Text('No nutrition data available',
+                  style: TextStyle(fontSize: 16, color: Colors.grey[600])),
               const SizedBox(height: 8),
               Text(
                 'Nutrition facts will appear here when available',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[500],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -349,70 +450,67 @@ class _CookbookSectionState extends State<CookbookSection> {
           servings: recipe.servings,
           showPCOSScore: true,
         ),
-        
         const SizedBox(height: 16),
-        
-        // Quick insights
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.blue.shade50,
+            color: Colors.deepPurple.shade50,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue.shade200),
+            border: Border.all(color: Colors.deepPurple.shade200),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(Icons.insights, size: 16, color: Colors.blue.shade700),
+                  Icon(Icons.insights,
+                      size: 16, color: Colors.deepPurple.shade700),
                   const SizedBox(width: 6),
                   Text(
                     'Quick Insights',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade900,
+                      color: Colors.deepPurple.shade900,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              
               if (recipe.servings != null)
                 _buildInsightRow(
                   'Per Serving',
                   '${(recipe.nutrition!.calories / recipe.servings!).toStringAsFixed(0)} calories',
-                  recipe.nutrition!.calories / recipe.servings! < 300 
-                    ? Colors.green 
-                    : recipe.nutrition!.calories / recipe.servings! < 500
-                      ? Colors.orange
-                      : Colors.red,
+                  recipe.nutrition!.calories / recipe.servings! < 300
+                      ? Colors.green
+                      : recipe.nutrition!.calories / recipe.servings! < 500
+                          ? Colors.orange
+                          : Colors.red,
                 ),
-              
               if (recipe.nutrition!.protein > 0)
                 _buildInsightRow(
                   'Protein content',
                   '${recipe.nutrition!.protein.toStringAsFixed(1)}g total',
-                  recipe.nutrition!.protein >= 20 ? Colors.green : Colors.grey,
+                  recipe.nutrition!.protein >= 20
+                      ? Colors.green
+                      : Colors.grey,
                 ),
-              
-              if (recipe.nutrition!.fiber != null && recipe.nutrition!.fiber! > 0)
+              if (recipe.nutrition!.fiber != null &&
+                  recipe.nutrition!.fiber! > 0)
                 _buildInsightRow(
                   'Fiber content',
                   '${recipe.nutrition!.fiber!.toStringAsFixed(1)}g total',
                   recipe.nutrition!.fiber! >= 5 ? Colors.green : Colors.grey,
                 ),
-              
               if (recipe.nutrition!.sodium > 0)
                 _buildInsightRow(
                   'Sodium',
                   '${recipe.nutrition!.sodium.toStringAsFixed(0)}mg total',
-                  recipe.nutrition!.sodium < 400 
-                    ? Colors.green 
-                    : recipe.nutrition!.sodium < 800
-                      ? Colors.orange
-                      : Colors.red,
+                  recipe.nutrition!.sodium < 400
+                      ? Colors.green
+                      : recipe.nutrition!.sodium < 800
+                          ? Colors.orange
+                          : Colors.red,
                 ),
             ],
           ),
@@ -421,7 +519,8 @@ class _CookbookSectionState extends State<CookbookSection> {
     );
   }
 
-  Widget _buildNotesTab(CookbookRecipe recipe, ScrollController scrollController) {
+  Widget _buildNotesTab(
+      CookbookRecipe recipe, ScrollController scrollController) {
     return ListView(
       controller: scrollController,
       padding: const EdgeInsets.all(16),
@@ -439,25 +538,17 @@ class _CookbookSectionState extends State<CookbookSection> {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.note, color: Colors.orange, size: 24),
+                    Icon(Icons.note, color: Colors.deepPurple, size: 24),
                     const SizedBox(width: 8),
-                    const Text(
-                      'My Notes',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    const Text('My Notes',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
                   ],
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  recipe.notes!,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    height: 1.5,
-                  ),
-                ),
+                Text(recipe.notes!,
+                    style:
+                        const TextStyle(fontSize: 15, height: 1.5)),
               ],
             ),
           )
@@ -468,15 +559,12 @@ class _CookbookSectionState extends State<CookbookSection> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.note_outlined, size: 64, color: Colors.grey[400]),
+                  Icon(Icons.note_outlined,
+                      size: 64, color: Colors.grey[400]),
                   const SizedBox(height: 16),
-                  Text(
-                    'No notes yet',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                    ),
-                  ),
+                  Text('No notes yet',
+                      style: TextStyle(
+                          fontSize: 16, color: Colors.grey[600])),
                 ],
               ),
             ),
@@ -493,22 +581,14 @@ class _CookbookSectionState extends State<CookbookSection> {
           Icon(Icons.circle, size: 8, color: color),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              label,
+            child: Text(label,
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+          ),
+          Text(value,
               style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade700,
-              ),
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: color)),
         ],
       ),
     );
@@ -522,13 +602,9 @@ class _CookbookSectionState extends State<CookbookSection> {
           children: [
             icon,
             const SizedBox(width: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            Text(title,
+                style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.bold)),
           ],
         ),
         const SizedBox(height: 12),
@@ -548,115 +624,151 @@ class _CookbookSectionState extends State<CookbookSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // Header — taps through to full cookbook page
           InkWell(
-            onTap: () {
-              setState(() => _isExpanded = !_isExpanded);
+            onTap: () async {
+              await Navigator.pushNamed(context, '/cookbook');
+              _loadRecipes();
             },
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.menu_book, color: Colors.orange),
+                    const Icon(Icons.menu_book, color: Colors.deepPurple),
                     const SizedBox(width: 8),
                     Text(
                       'My Cookbook (${_recipes.length})',
                       style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                          fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
-                Icon(
-                  _isExpanded ? Icons.expand_less : Icons.expand_more,
-                  color: Colors.grey[600],
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'View All',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.deepPurple.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(Icons.arrow_forward_ios,
+                        size: 14, color: Colors.deepPurple.shade700),
+                  ],
                 ),
               ],
             ),
           ),
-          
-          // Content
-          if (_isExpanded) ...[
-            const SizedBox(height: 16),
-            
-            if (_isLoading)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: CircularProgressIndicator(),
-                ),
-              )
-            else if (_recipes.isEmpty)
-              Center(
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.menu_book,
-                      size: 50,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'No recipes in your cookbook yet',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Add recipes by clicking the bookmark button',
-                      style: TextStyle(
-                        color: Colors.grey[500],
-                        fontSize: 12,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              )
-            else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _recipes.length,
-                itemBuilder: (context, index) {
-                  final recipe = _recipes[index];
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      onTap: () => _showRecipeDetails(recipe),
-                      leading: const CircleAvatar(
-                        backgroundColor: Colors.orange,
-                        child: Icon(Icons.restaurant, color: Colors.white, size: 20),
-                      ),
-                      title: Text(
-                        recipe.recipeName,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text(
-                        '${recipe.ingredients.split(',').take(2).join(', ')}...',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                            onPressed: () => _deleteRecipe(recipe.id, recipe.recipeName),
-                          ),
-                          const Icon(Icons.arrow_forward_ios, size: 14),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+
+          const SizedBox(height: 16),
+
+          if (_isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: CircularProgressIndicator(),
               ),
-          ],
+            )
+          else if (_recipes.isEmpty)
+            Center(
+              child: Column(
+                children: [
+                  Icon(Icons.menu_book, size: 50, color: Colors.grey[400]),
+                  const SizedBox(height: 8),
+                  Text(
+                    'No recipes in your cookbook yet',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Create recipes to save them here',
+                    style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      await Navigator.pushNamed(context, '/submit-recipe');
+                      _loadRecipes();
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Create Recipe'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Column(
+              children: [
+                // Preview: first 3 recipes
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount:
+                      _recipes.length > 3 ? 3 : _recipes.length,
+                  itemBuilder: (context, index) {
+                    final recipe = _recipes[index];
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        onTap: () => _showRecipeDetails(recipe),
+                        leading: const CircleAvatar(
+                          backgroundColor: Colors.deepPurple,
+                          child: Icon(Icons.restaurant,
+                              color: Colors.white, size: 20),
+                        ),
+                        title: Text(
+                          recipe.recipeName,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          '${recipe.ingredients.split(',').take(2).join(', ')}...',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontSize: 12, color: Colors.grey[600]),
+                        ),
+                        trailing: const Icon(Icons.arrow_forward_ios,
+                            size: 14),
+                      ),
+                    );
+                  },
+                ),
+
+                // View All button if more than 3
+                if (_recipes.length > 3) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        await Navigator.pushNamed(context, '/cookbook');
+                        _loadRecipes();
+                      },
+                      icon: const Icon(Icons.menu_book),
+                      label: Text('View All ${_recipes.length} Recipes'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.deepPurple,
+                        side: const BorderSide(color: Colors.deepPurple),
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
         ],
       ),
     );

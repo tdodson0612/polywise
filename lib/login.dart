@@ -1,4 +1,4 @@
-// lib/login.dart - COMPLETE UPDATED FILE
+// lib/login.dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -24,9 +24,9 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   StreamSubscription? _authSub;
-  
+
   String _email = '';
   String _password = '';
   String _confirmPassword = '';
@@ -50,6 +50,32 @@ class _LoginPageState extends State<LoginPage> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  void _setupAuthListener() {
+    _authSub = AuthService.authStateChanges.listen((data) {
+      final event = data.event;
+      final session = data.session;
+
+      if (!mounted) return;
+
+      // Log only — navigation is handled explicitly in _handleLogin/_handleSignUp
+      switch (event) {
+        case AuthChangeEvent.signedIn:
+          AppConfig.debugPrint(
+              '🔐 Auth state: User signed in: ${session?.user.email}');
+          break;
+        case AuthChangeEvent.signedOut:
+          AppConfig.debugPrint('🔓 Auth state: User signed out');
+          break;
+        case AuthChangeEvent.passwordRecovery:
+          AppConfig.debugPrint(
+              '🔑 Auth state: Password recovery initiated');
+          break;
+        default:
+          break;
+      }
+    });
   }
 
   Future<void> _loadSavedCredentials() async {
@@ -76,7 +102,7 @@ class _LoginPageState extends State<LoginPage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('remember_me', _rememberMe);
-      
+
       if (_rememberMe) {
         await prefs.setString('saved_email', _email.trim());
       } else {
@@ -89,13 +115,13 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _submitForm() async {
     FocusScope.of(context).unfocus();
-    
+
     if (!_formKey.currentState!.validate()) return;
-    
+
     _formKey.currentState!.save();
-    
+
     if (!mounted) return;
-    
+
     setState(() => _isLoading = true);
 
     try {
@@ -116,23 +142,33 @@ class _LoginPageState extends State<LoginPage> {
     String errorMessage = error.toString();
     String userFriendlyMessage;
 
-    if (errorMessage.contains('Invalid login credentials') || 
+    if (errorMessage.contains('Invalid login credentials') ||
         errorMessage.contains('Invalid email or password')) {
-      userFriendlyMessage = 'Incorrect email or password. Please try again.';
+      userFriendlyMessage =
+          'Incorrect email or password. Please try again.';
     } else if (errorMessage.contains('Email not confirmed')) {
-      userFriendlyMessage = 'Please verify your email first. Check your inbox for the confirmation link.';
+      userFriendlyMessage =
+          'Please verify your email first. Check your inbox for the confirmation link.';
     } else if (errorMessage.contains('User already registered')) {
-      userFriendlyMessage = 'This email is already registered. Try signing in instead.';
-    } else if (errorMessage.contains('Password should be at least 6 characters')) {
+      userFriendlyMessage =
+          'This email is already registered. Try signing in instead.';
+    } else if (errorMessage
+        .contains('Password should be at least 6 characters')) {
       userFriendlyMessage = 'Password must be at least 6 characters long.';
-    } else if (errorMessage.contains('timeout') || errorMessage.contains('network')) {
-      userFriendlyMessage = 'Connection timed out. Please check your internet and try again.';
+    } else if (errorMessage.contains('timeout') ||
+        errorMessage.contains('network')) {
+      userFriendlyMessage =
+          'Connection timed out. Please check your internet and try again.';
     } else if (errorMessage.contains('Passwords do not match')) {
       userFriendlyMessage = 'The passwords you entered don\'t match.';
-    } else if (errorMessage.contains('row-level security') || errorMessage.contains('RLS')) {
-      userFriendlyMessage = 'Account setup failed. Please contact support if this continues.';
-    } else if (errorMessage.contains('session') || errorMessage.contains('expired')) {
-      userFriendlyMessage = 'Session error detected. Please try the "Clear Session" button below.';
+    } else if (errorMessage.contains('row-level security') ||
+        errorMessage.contains('RLS')) {
+      userFriendlyMessage =
+          'Account setup failed. Please contact support if this continues.';
+    } else if (errorMessage.contains('session') ||
+        errorMessage.contains('expired')) {
+      userFriendlyMessage =
+          'Session error detected. Please try the "Clear Session" button below.';
     } else {
       userFriendlyMessage = 'Unable to sign in right now. Please try again.';
     }
@@ -150,7 +186,7 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _handleLogin() async {
     try {
       final trimmedEmail = _email.trim().toLowerCase();
-      
+
       if (trimmedEmail.isEmpty) {
         throw Exception('Please enter your email address');
       }
@@ -166,33 +202,39 @@ class _LoginPageState extends State<LoginPage> {
         password: _password,
       );
 
-      // ✅ CRITICAL: Verify we actually got authenticated
+      // Verify authentication succeeded
       if (response.user == null || response.session == null) {
         throw Exception('Login failed - no user session created');
       }
 
       AppConfig.debugPrint('✅ Login successful: ${response.user?.email}');
-      
-      // ✅ Wait for auth state to settle
-      await Future.delayed(const Duration(milliseconds: 800));
-      
+
+      // Wait for auth state to fully settle
+      await Future.delayed(const Duration(milliseconds: 1500));
+
+      // Verify session is still valid after settling
+      final currentSession = Supabase.instance.client.auth.currentSession;
+      if (currentSession == null) {
+        throw Exception(
+            'Session was not properly established. Please try again.');
+      }
+
+      AppConfig.debugPrint('✅ Session verified after delay');
+
       if (!mounted) return;
 
-      // ✅ Show success message
       ErrorHandlingService.showSuccess(context, 'Welcome back!');
-      
-      // ✅ Short delay before navigation
+
       await Future.delayed(const Duration(milliseconds: 300));
-      
+
       if (!mounted) return;
 
-      // ✅ CRITICAL: Use pushNamedAndRemoveUntil to prevent back navigation
+      // Remove all previous routes so back button can't return to login
       Navigator.pushNamedAndRemoveUntil(
-        context, 
+        context,
         '/home',
-        (route) => false, // Remove all previous routes
+        (route) => false,
       );
-
     } catch (e) {
       AppConfig.debugPrint('❌ Login error: $e');
       rethrow;
@@ -214,35 +256,37 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final trimmedEmail = _email.trim().toLowerCase();
-      
+
       AppConfig.debugPrint('📝 Sign up attempt for: $trimmedEmail');
 
       final response = await AuthService.signUp(
         email: trimmedEmail,
         password: _password,
       ).timeout(
-        const Duration(seconds: 15),
+        const Duration(seconds: 30),
         onTimeout: () {
           throw Exception('Connection timed out. Please try again.');
         },
       );
 
       if (response.user != null) {
-        AppConfig.debugPrint('✅ Sign up successful: ${response.user?.email}');
-        
+        AppConfig.debugPrint(
+            '✅ Sign up successful: ${response.user?.email}');
+
         if (_rememberMe) {
           await _saveCredentials();
         }
 
         if (mounted) {
           if (response.session == null) {
+            // Email confirmation required
             ErrorHandlingService.showSuccess(
               context,
-              'Account created! Please check your email to confirm your account.'
+              'Account created! Please check your email to confirm your account.',
             );
-            
+
             await Future.delayed(const Duration(seconds: 2));
-            
+
             if (mounted) {
               setState(() {
                 _isLogin = true;
@@ -250,10 +294,23 @@ class _LoginPageState extends State<LoginPage> {
               });
             }
           } else {
-            // Rebranded welcome message
+            // Auto-login — wait for session to settle before navigating
+            await Future.delayed(const Duration(milliseconds: 1500));
+
+            final currentSession =
+                Supabase.instance.client.auth.currentSession;
+            if (currentSession == null) {
+              throw Exception(
+                  'Session was not properly established. Please try logging in.');
+            }
+
+            AppConfig.debugPrint('✅ Session verified after signup delay');
+
+            if (!mounted) return;
+
             ErrorHandlingService.showSuccess(context, 'Welcome to PolyWise!');
             await Future.delayed(const Duration(milliseconds: 500));
-            
+
             if (mounted) {
               Navigator.pushReplacementNamed(context, '/home');
             }
@@ -272,13 +329,12 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // ✅ NEW: Force reset session (for iOS debugging)
   Future<void> _forceResetSession() async {
     try {
       setState(() => _isLoading = true);
-      
+
       await AuthService.forceResetSession();
-      
+
       if (mounted) {
         ErrorHandlingService.showSuccess(
           context,
@@ -307,12 +363,14 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     if (resetEmail.isEmpty) {
-      ErrorHandlingService.showSimpleError(context, 'Please enter your email address');
+      ErrorHandlingService.showSimpleError(
+          context, 'Please enter your email address');
       return;
     }
 
     if (!_isValidEmail(resetEmail)) {
-      ErrorHandlingService.showSimpleError(context, 'Please enter a valid email address');
+      ErrorHandlingService.showSimpleError(
+          context, 'Please enter a valid email address');
       return;
     }
 
@@ -327,7 +385,7 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) {
         ErrorHandlingService.showSuccess(
           context,
-          'Password reset link sent! Check your email and spam folder.'
+          'Password reset link sent! Check your email and spam folder.',
         );
       }
     } catch (e) {
@@ -336,7 +394,8 @@ class _LoginPageState extends State<LoginPage> {
           context: context,
           error: e,
           category: ErrorHandlingService.authError,
-          customMessage: 'Unable to send password reset email. Please try again.',
+          customMessage:
+              'Unable to send password reset email. Please try again.',
           onRetry: _sendPasswordResetEmail,
         );
       }
@@ -381,7 +440,8 @@ class _LoginPageState extends State<LoginPage> {
               keyboardType: TextInputType.emailAddress,
               autofocus: true,
               textInputAction: TextInputAction.done,
-              onSubmitted: (value) => Navigator.pop(dialogContext, value.trim()),
+              onSubmitted: (value) =>
+                  Navigator.pop(dialogContext, value.trim()),
             ),
           ],
         ),
@@ -391,7 +451,8 @@ class _LoginPageState extends State<LoginPage> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
+            onPressed: () =>
+                Navigator.pop(dialogContext, controller.text.trim()),
             style: ElevatedButton.styleFrom(
               backgroundColor: kPolyWiseTeal,
               foregroundColor: Colors.white,
@@ -403,52 +464,29 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void _setupAuthListener() {
-    _authSub = AuthService.authStateChanges.listen((data) {
-      final event = data.event;
-      final session = data.session;
-
-      if (!mounted) return;
-
-      // ✅ CRITICAL: Only log, don't navigate from here
-      switch (event) {
-        case AuthChangeEvent.signedIn:
-          AppConfig.debugPrint('🔐 Auth state: User signed in: ${session?.user.email}');
-          break;
-        case AuthChangeEvent.signedOut:
-          AppConfig.debugPrint('🔓 Auth state: User signed out');
-          break;
-        case AuthChangeEvent.passwordRecovery:
-          AppConfig.debugPrint('🔑 Auth state: Password recovery initiated');
-          break;
-        default:
-          break;
-      }
-    });
-  }
-
   void _toggleMode() {
     setState(() {
       _isLogin = !_isLogin;
       _formKey.currentState?.reset();
-      
+
       final savedEmail = _emailController.text;
       _emailController.clear();
       _passwordController.clear();
       _confirmPasswordController.clear();
-      
+
       if (savedEmail.isNotEmpty && _isValidEmail(savedEmail)) {
         _emailController.text = savedEmail;
         _email = savedEmail;
       }
-      
+
       _password = '';
       _confirmPassword = '';
     });
   }
 
   bool _isValidEmail(String email) {
-    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email.trim());
+    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+        .hasMatch(email.trim());
   }
 
   String? _validateEmail(String? value) {
@@ -513,7 +551,8 @@ class _LoginPageState extends State<LoginPage> {
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: EdgeInsets.all(ScreenUtils.getResponsivePadding(context)),
+              padding: EdgeInsets.all(
+                  ScreenUtils.getResponsivePadding(context)),
               child: Container(
                 constraints: BoxConstraints(maxWidth: maxWidth),
                 child: Card(
@@ -523,7 +562,8 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   color: Colors.white.withOpacity(0.95),
                   child: Padding(
-                    padding: EdgeInsets.all(ScreenUtils.getResponsivePadding(context)),
+                    padding: EdgeInsets.all(
+                        ScreenUtils.getResponsivePadding(context)),
                     child: AutofillGroup(
                       child: Form(
                         key: _formKey,
@@ -533,38 +573,46 @@ class _LoginPageState extends State<LoginPage> {
                           children: [
                             Icon(
                               Icons.spa_rounded,
-                              size: ScreenUtils.getIconSize(context, baseSize: 64),
+                              size: ScreenUtils.getIconSize(context,
+                                  baseSize: 64),
                               color: kPolyWisePurple,
                             ),
                             SizedBox(height: isTablet ? 24 : 16),
                             Text(
-                              _isLogin ? 'Welcome Back!' : 'Create Your Account',
+                              _isLogin
+                                  ? 'Welcome Back!'
+                                  : 'Create Your Account',
                               style: TextStyle(
-                                fontSize: (isTablet ? 28 : 24) * ScreenUtils.getFontSizeMultiplier(context),
+                                fontSize: (isTablet ? 28 : 24) *
+                                    ScreenUtils.getFontSizeMultiplier(
+                                        context),
                                 fontWeight: FontWeight.bold,
                                 color: Colors.grey.shade800,
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             Text(
-                              _isLogin 
+                              _isLogin
                                   ? 'Sign in to access your dashboard'
                                   : 'Join PolyWise for hormonal health',
                               style: TextStyle(
-                                fontSize: (isTablet ? 16 : 14) * ScreenUtils.getFontSizeMultiplier(context),
+                                fontSize: (isTablet ? 16 : 14) *
+                                    ScreenUtils.getFontSizeMultiplier(
+                                        context),
                                 color: Colors.grey.shade600,
                               ),
                               textAlign: TextAlign.center,
                             ),
                             SizedBox(height: isTablet ? 40 : 32),
-                            
+
                             // Email Field
                             TextFormField(
                               controller: _emailController,
                               decoration: InputDecoration(
-                                labelText: "Email Address",
-                                prefixIcon: const Icon(Icons.email_outlined),
+                                labelText: 'Email Address',
+                                prefixIcon:
+                                    const Icon(Icons.email_outlined),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -574,27 +622,30 @@ class _LoginPageState extends State<LoginPage> {
                               keyboardType: TextInputType.emailAddress,
                               textInputAction: TextInputAction.next,
                               validator: _validateEmail,
-                              onSaved: (val) => _email = val?.trim() ?? '',
+                              onSaved: (val) =>
+                                  _email = val?.trim() ?? '',
                               autocorrect: false,
                               enableSuggestions: false,
                               autofillHints: const [AutofillHints.email],
                             ),
                             const SizedBox(height: 16),
-                            
+
                             // Password Field
                             TextFormField(
                               controller: _passwordController,
                               decoration: InputDecoration(
-                                labelText: "Password",
-                                prefixIcon: const Icon(Icons.lock_outline),
+                                labelText: 'Password',
+                                prefixIcon:
+                                    const Icon(Icons.lock_outline),
                                 suffixIcon: IconButton(
-                                  icon: Icon(_obscurePassword 
-                                      ? Icons.visibility_outlined 
-                                      : Icons.visibility_off_outlined
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined,
                                   ),
-                                  onPressed: () => setState(() => 
-                                      _obscurePassword = !_obscurePassword
-                                  ),
+                                  onPressed: () => setState(() =>
+                                      _obscurePassword =
+                                          !_obscurePassword),
                                 ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -603,40 +654,42 @@ class _LoginPageState extends State<LoginPage> {
                                 fillColor: Colors.white,
                               ),
                               obscureText: _obscurePassword,
-                              textInputAction: _isLogin 
-                                  ? TextInputAction.done 
+                              textInputAction: _isLogin
+                                  ? TextInputAction.done
                                   : TextInputAction.next,
                               validator: _validatePassword,
                               onSaved: (val) => _password = val ?? '',
                               autocorrect: false,
                               enableSuggestions: false,
-                              autofillHints: _isLogin 
+                              autofillHints: _isLogin
                                   ? const [AutofillHints.password]
                                   : const [AutofillHints.newPassword],
-                              onFieldSubmitted: _isLogin 
-                                  ? (_) => _submitForm() 
-                                  : null,
+                              onFieldSubmitted:
+                                  _isLogin ? (_) => _submitForm() : null,
                             ),
-                            
-                            // Confirm Password (Sign Up Only)
+
+                            // Confirm Password (Sign Up only)
                             if (!_isLogin) ...[
                               const SizedBox(height: 16),
                               TextFormField(
                                 controller: _confirmPasswordController,
                                 decoration: InputDecoration(
-                                  labelText: "Confirm Password",
-                                  prefixIcon: const Icon(Icons.lock_outline),
+                                  labelText: 'Confirm Password',
+                                  prefixIcon:
+                                      const Icon(Icons.lock_outline),
                                   suffixIcon: IconButton(
-                                    icon: Icon(_obscureConfirmPassword 
-                                        ? Icons.visibility_outlined 
-                                        : Icons.visibility_off_outlined
+                                    icon: Icon(
+                                      _obscureConfirmPassword
+                                          ? Icons.visibility_outlined
+                                          : Icons.visibility_off_outlined,
                                     ),
-                                    onPressed: () => setState(() => 
-                                        _obscureConfirmPassword = !_obscureConfirmPassword
-                                    ),
+                                    onPressed: () => setState(() =>
+                                        _obscureConfirmPassword =
+                                            !_obscureConfirmPassword),
                                   ),
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius:
+                                        BorderRadius.circular(12),
                                   ),
                                   filled: true,
                                   fillColor: Colors.white,
@@ -644,29 +697,34 @@ class _LoginPageState extends State<LoginPage> {
                                 obscureText: _obscureConfirmPassword,
                                 textInputAction: TextInputAction.done,
                                 validator: _validateConfirmPassword,
-                                onSaved: (val) => _confirmPassword = val ?? '',
+                                onSaved: (val) =>
+                                    _confirmPassword = val ?? '',
                                 autocorrect: false,
                                 enableSuggestions: false,
-                                autofillHints: const [AutofillHints.newPassword],
+                                autofillHints: const [
+                                  AutofillHints.newPassword
+                                ],
                                 onFieldSubmitted: (_) => _submitForm(),
                               ),
                             ],
-                            
-                            // Remember Me (Login Only)
+
+                            // Remember Me (Login only)
                             if (_isLogin) ...[
                               const SizedBox(height: 16),
                               InkWell(
-                                onTap: () => setState(() => _rememberMe = !_rememberMe),
+                                onTap: () => setState(
+                                    () => _rememberMe = !_rememberMe),
                                 borderRadius: BorderRadius.circular(8),
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 4),
                                   child: Row(
                                     children: [
                                       Checkbox(
                                         value: _rememberMe,
-                                        onChanged: (value) => setState(() => 
-                                            _rememberMe = value ?? true
-                                        ),
+                                        onChanged: (value) => setState(
+                                            () => _rememberMe =
+                                                value ?? true),
                                         activeColor: kPolyWiseTeal,
                                       ),
                                       Expanded(
@@ -684,77 +742,103 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ),
                             ],
-                            
+
                             SizedBox(height: isTablet ? 32 : 24),
-                            
+
                             // Submit Button
                             SizedBox(
-                              height: ScreenUtils.getButtonHeight(context),
+                              height:
+                                  ScreenUtils.getButtonHeight(context),
                               child: ElevatedButton(
-                                onPressed: _isLoading ? null : _submitForm,
+                                onPressed: _isLoading
+                                    ? null
+                                    : _submitForm,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: kPolyWiseTeal,
                                   foregroundColor: Colors.white,
-                                  disabledBackgroundColor: Colors.grey.shade300,
+                                  disabledBackgroundColor:
+                                      Colors.grey.shade300,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius:
+                                        BorderRadius.circular(12),
                                   ),
                                   elevation: 2,
                                 ),
-                                child: _isLoading 
+                                child: _isLoading
                                     ? Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           const SizedBox(
                                             width: 20,
                                             height: 20,
-                                            child: CircularProgressIndicator(
+                                            child:
+                                                CircularProgressIndicator(
                                               color: Colors.white,
                                               strokeWidth: 2,
                                             ),
                                           ),
                                           const SizedBox(width: 12),
                                           Text(
-                                            _isLogin ? 'Signing In...' : 'Creating Account...',
+                                            _isLogin
+                                                ? 'Signing In...'
+                                                : 'Creating Account...',
                                             style: TextStyle(
-                                              fontSize: (isTablet ? 18 : 16) * ScreenUtils.getFontSizeMultiplier(context),
+                                              fontSize: (isTablet
+                                                          ? 18
+                                                          : 16) *
+                                                  ScreenUtils
+                                                      .getFontSizeMultiplier(
+                                                          context),
                                             ),
                                           ),
                                         ],
                                       )
                                     : Text(
-                                        _isLogin ? 'Sign In' : 'Create Account',
+                                        _isLogin
+                                            ? 'Sign In'
+                                            : 'Create Account',
                                         style: TextStyle(
-                                          fontSize: (isTablet ? 18 : 16) * ScreenUtils.getFontSizeMultiplier(context),
+                                          fontSize: (isTablet ? 18 : 16) *
+                                              ScreenUtils
+                                                  .getFontSizeMultiplier(
+                                                      context),
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
                               ),
                             ),
-                            
-                            // Forgot Password (Login Only)
+
+                            // Forgot Password + Debug Session Reset (Login only)
                             if (_isLogin) ...[
                               const SizedBox(height: 16),
                               TextButton(
-                                onPressed: _isLoading ? null : _sendPasswordResetEmail,
+                                onPressed: _isLoading
+                                    ? null
+                                    : _sendPasswordResetEmail,
                                 child: Text(
-                                  "Forgot your password?",
+                                  'Forgot your password?',
                                   style: TextStyle(
                                     color: kPolyWisePurple,
-                                    fontSize: (isTablet ? 16 : 14) * ScreenUtils.getFontSizeMultiplier(context),
+                                    fontSize: (isTablet ? 16 : 14) *
+                                        ScreenUtils.getFontSizeMultiplier(
+                                            context),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
-                              
-                              // ✅ NEW: Clear Session Button (Debug Only)
+
+                              // Clear Session — debug builds only
                               if (AppConfig.enableDebugPrints) ...[
                                 const SizedBox(height: 8),
                                 TextButton.icon(
-                                  onPressed: _isLoading ? null : _forceResetSession,
-                                  icon: const Icon(Icons.refresh, size: 16, color: Colors.orange),
+                                  onPressed: _isLoading
+                                      ? null
+                                      : _forceResetSession,
+                                  icon: const Icon(Icons.refresh,
+                                      size: 16, color: Colors.orange),
                                   label: Text(
-                                    "Clear Session (iOS Debug)",
+                                    'Clear Session (iOS Debug)',
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: Colors.orange.shade700,
@@ -763,15 +847,16 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ],
                             ],
-                            
+
                             SizedBox(height: isTablet ? 32 : 24),
-                            
+
                             // Divider
                             Row(
                               children: [
                                 const Expanded(child: Divider()),
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16),
                                   child: Text(
                                     'OR',
                                     style: TextStyle(
@@ -784,28 +869,33 @@ class _LoginPageState extends State<LoginPage> {
                                 const Expanded(child: Divider()),
                               ],
                             ),
-                            
+
                             SizedBox(height: isTablet ? 32 : 24),
-                            
-                            // Toggle Mode Button
+
+                            // Toggle Mode
                             TextButton(
-                              onPressed: _isLoading ? null : _toggleMode,
+                              onPressed:
+                                  _isLoading ? null : _toggleMode,
                               child: RichText(
                                 textAlign: TextAlign.center,
                                 text: TextSpan(
                                   style: TextStyle(
-                                    fontSize: (isTablet ? 16 : 14) * ScreenUtils.getFontSizeMultiplier(context),
+                                    fontSize: (isTablet ? 16 : 14) *
+                                        ScreenUtils.getFontSizeMultiplier(
+                                            context),
                                     color: Colors.grey.shade800,
                                   ),
                                   children: [
                                     TextSpan(
-                                      text: _isLogin 
+                                      text: _isLogin
                                           ? "Don't have an account? "
-                                          : "Already have an account? ",
+                                          : 'Already have an account? ',
                                     ),
                                     TextSpan(
-                                      text: _isLogin ? 'Create one' : 'Sign in',
-                                      style: TextStyle(
+                                      text: _isLogin
+                                          ? 'Create one'
+                                          : 'Sign in',
+                                      style: const TextStyle(
                                         color: kPolyWiseTeal,
                                         fontWeight: FontWeight.w600,
                                       ),

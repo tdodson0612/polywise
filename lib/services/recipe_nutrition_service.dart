@@ -1,5 +1,5 @@
-// lib/services/recipe_nutrition_service.dart - COMPLETE WITH ALL NUTRIENTS
-// Calculates comprehensive nutrition for recipes
+// lib/services/recipe_nutrition_service.dart
+// Calculates comprehensive nutrition for recipes - PCOS VERSION
 // iOS 14 Compatible | Production Ready
 
 import 'package:polywise/models/nutrition_info.dart';
@@ -42,23 +42,13 @@ class RecipeNutrition {
 
   /// Calculate macronutrient percentages
   Map<String, double> get macroPercentages {
-    // Calories from macros (per gram):
-    // - Protein: 4 cal/g
-    // - Carbs: 4 cal/g
-    // - Fat: 9 cal/g
-
     final proteinCals = protein * 4;
     final carbsCals = carbohydrates * 4;
     final fatCals = fat * 9;
-
     final totalMacroCals = proteinCals + carbsCals + fatCals;
 
     if (totalMacroCals == 0) {
-      return {
-        'protein': 0.0,
-        'carbs': 0.0,
-        'fat': 0.0,
-      };
+      return {'protein': 0.0, 'carbs': 0.0, 'fat': 0.0};
     }
 
     return {
@@ -193,10 +183,9 @@ class RecipeNutritionService {
   /// Get a summary string of macronutrients
   static String getMacroSummary(RecipeNutrition nutrition) {
     final macros = nutrition.macroPercentages;
-    
     return 'Protein: ${macros['protein']!.toStringAsFixed(1)}% | '
-           'Carbs: ${macros['carbs']!.toStringAsFixed(1)}% | '
-           'Fat: ${macros['fat']!.toStringAsFixed(1)}%';
+        'Carbs: ${macros['carbs']!.toStringAsFixed(1)}% | '
+        'Fat: ${macros['fat']!.toStringAsFixed(1)}%';
   }
 
   /// Check if recipe is high protein (>30% of calories from protein)
@@ -217,31 +206,43 @@ class RecipeNutritionService {
     return macros['fat']! < 30.0;
   }
 
+  /// Check if recipe is low sugar (<10g) — critical for insulin resistance
+  static bool isLowSugar(RecipeNutrition nutrition) {
+    return nutrition.sugar < 10.0;
+  }
+
   /// Check if recipe is keto-friendly (<10% carbs, >70% fat)
   static bool isKeto(RecipeNutrition nutrition) {
     final macros = nutrition.macroPercentages;
     return macros['carbs']! < 10.0 && macros['fat']! > 70.0;
   }
 
+  /// Check if recipe is heart-healthy
+  static bool isHeartHealthy(RecipeNutrition nutrition) {
+    return nutrition.saturatedFat < 2.0 &&
+        nutrition.transFat == 0.0 &&
+        nutrition.cholesterol < 20.0 &&
+        nutrition.sodium < 140.0;
+  }
+
+  /// Check if recipe is PCOS-friendly
+  static bool isPCOSFriendly(RecipeNutrition nutrition) {
+    return isHighProtein(nutrition) &&
+        isLowSugar(nutrition) &&
+        nutrition.fat < 20.0 &&
+        nutrition.sodium < 400.0;
+  }
+
   /// Get dietary label for recipe based on macros
   static String getDietaryLabel(RecipeNutrition nutrition) {
     final labels = <String>[];
 
-    if (isHighProtein(nutrition)) {
-      labels.add('High Protein');
-    }
-    if (isLowCarb(nutrition)) {
-      labels.add('Low Carb');
-    }
-    if (isLowFat(nutrition)) {
-      labels.add('Low Fat');
-    }
-    if (isKeto(nutrition)) {
-      labels.add('Keto');
-    }
-    if (nutrition.polyScore >= 75) {
-      labels.add('poly Friendly');
-    }
+    if (isHighProtein(nutrition)) labels.add('High Protein');
+    if (isLowCarb(nutrition)) labels.add('Low Carb');
+    if (isLowFat(nutrition)) labels.add('Low Fat');
+    if (isLowSugar(nutrition)) labels.add('Low Sugar');
+    if (isKeto(nutrition)) labels.add('Keto');
+    if (isPCOSFriendly(nutrition)) labels.add('PCOS Friendly');
 
     return labels.isEmpty ? 'Balanced' : labels.join(', ');
   }
@@ -249,44 +250,47 @@ class RecipeNutritionService {
   /// Get nutrient density score (nutrients per calorie)
   static double getNutrientDensity(RecipeNutrition nutrition) {
     if (nutrition.calories == 0) return 0;
-    
-    // Higher score = more nutrients per calorie
-    final nutrientScore = 
-      nutrition.protein + 
-      nutrition.fiber + 
-      (nutrition.potassium / 100) + 
-      (nutrition.iron * 10);
-    
+
+    final nutrientScore = nutrition.protein +
+        nutrition.fiber +
+        (nutrition.potassium / 100) +
+        (nutrition.iron * 10);
+
     return (nutrientScore / nutrition.calories) * 100;
   }
 
-  /// Check if recipe is heart-healthy
-  static bool isHeartHealthy(RecipeNutrition nutrition) {
-    return nutrition.saturatedFat < 2.0 &&
-           nutrition.transFat == 0.0 &&
-           nutrition.cholesterol < 20.0 &&
-           nutrition.sodium < 140.0;
+  /// Get PCOS-specific health warnings
+  static List<String> getPCOSWarnings(RecipeNutrition nutrition) {
+    final warnings = <String>[];
+
+    if (nutrition.sugar > 10.0) {
+      warnings.add('⚠️ High sugar — may worsen insulin resistance');
+    }
+    if (nutrition.fat > 15.0) {
+      warnings.add('⚠️ High fat — may affect hormone balance');
+    }
+    if (nutrition.saturatedFat > 5.0) {
+      warnings.add('⚠️ High saturated fat — linked to inflammation');
+    }
+    if (nutrition.sodium > 400.0) {
+      warnings.add('⚠️ High sodium — stay hydrated');
+    }
+    if (nutrition.protein < 15.0) {
+      warnings.add('ℹ️ Low protein — consider adding a protein source');
+    }
+
+    return warnings;
   }
 
-  /// Get health warnings
+  /// Get health warnings (general)
   static List<String> getHealthWarnings(RecipeNutrition nutrition) {
     final warnings = <String>[];
 
-    if (nutrition.saturatedFat > 5.0) {
-      warnings.add('High in saturated fat');
-    }
-    if (nutrition.transFat > 0.0) {
-      warnings.add('Contains trans fat');
-    }
-    if (nutrition.sodium > 400.0) {
-      warnings.add('High in sodium');
-    }
-    if (nutrition.sugar > 15.0) {
-      warnings.add('High in sugar');
-    }
-    if (nutrition.cholesterol > 75.0) {
-      warnings.add('High in cholesterol');
-    }
+    if (nutrition.saturatedFat > 5.0) warnings.add('High in saturated fat');
+    if (nutrition.transFat > 0.0) warnings.add('Contains trans fat');
+    if (nutrition.sodium > 400.0) warnings.add('High in sodium');
+    if (nutrition.sugar > 15.0) warnings.add('High in sugar');
+    if (nutrition.cholesterol > 75.0) warnings.add('High in cholesterol');
 
     return warnings;
   }
@@ -295,22 +299,69 @@ class RecipeNutritionService {
   static List<String> getHealthBenefits(RecipeNutrition nutrition) {
     final benefits = <String>[];
 
-    if (nutrition.fiber >= 3.0) {
+    if (nutrition.protein >= 20.0) {
+      benefits.add('Excellent protein source');
+    } else if (nutrition.protein >= 10.0) {
+      benefits.add('Good protein source');
+    }
+    if (nutrition.fiber >= 5.0) {
+      benefits.add('High fiber');
+    } else if (nutrition.fiber >= 3.0) {
       benefits.add('Good source of fiber');
     }
-    if (nutrition.protein >= 10.0) {
-      benefits.add('Good source of protein');
-    }
-    if (nutrition.iron >= 2.0) {
-      benefits.add('Good source of iron');
-    }
-    if (nutrition.potassium >= 300.0) {
-      benefits.add('Good source of potassium');
-    }
-    if (isHeartHealthy(nutrition)) {
-      benefits.add('Heart-healthy');
-    }
+    if (nutrition.iron >= 2.0) benefits.add('Good source of iron');
+    if (nutrition.potassium >= 300.0) benefits.add('Good source of potassium');
+    if (isLowSugar(nutrition)) benefits.add('Low sugar');
+    if (isHeartHealthy(nutrition)) benefits.add('Heart-healthy');
+    if (isPCOSFriendly(nutrition)) benefits.add('PCOS-friendly');
 
     return benefits;
+  }
+
+  /// Get PCOS-type-specific guidance
+  static String getPCOSGuidance(RecipeNutrition nutrition, String pcosType) {
+    switch (pcosType.toLowerCase()) {
+      case 'insulin resistant':
+        if (nutrition.sugar > 10) {
+          return '⚠️ High sugar content may worsen insulin resistance';
+        }
+        if (nutrition.protein >= 20) {
+          return '✅ Good protein content to support blood sugar balance';
+        }
+        return 'Focus on low-GI foods and pair carbs with protein';
+
+      case 'lean pcos':
+        if (nutrition.protein < 15) {
+          return '⚠️ Consider adding more protein to support hormone production';
+        }
+        return 'Focus on anti-inflammatory whole foods';
+
+      case 'inflammatory':
+        if (nutrition.saturatedFat > 5.0) {
+          return '⚠️ High saturated fat may increase inflammation';
+        }
+        if (nutrition.fiber >= 5.0) {
+          return '✅ Good fiber content supports gut health and reduces inflammation';
+        }
+        return 'Prioritise omega-3s, antioxidants, and fibre-rich foods';
+
+      case 'adrenal':
+        if (nutrition.sodium > 400.0) {
+          return 'ℹ️ Moderate sodium — helpful for adrenal support but watch overall intake';
+        }
+        if (nutrition.protein >= 20) {
+          return '✅ Good protein to support adrenal function and energy';
+        }
+        return 'Focus on regular meals with balanced macros to support cortisol rhythm';
+
+      case 'post-pill pcos':
+        if (nutrition.iron >= 3.0) {
+          return '✅ Good iron content — helpful during hormone rebalancing';
+        }
+        return 'Focus on nutrient-dense foods to support hormone recovery';
+
+      default:
+        return 'Consult your PCOS care team for personalised nutrition guidance';
+    }
   }
 }

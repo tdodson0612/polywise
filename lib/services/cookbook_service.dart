@@ -152,16 +152,15 @@ class CookbookService {
       await DatabaseServiceCore.clearCache(_CACHE_KEY);
 
       return CookbookRecipe.fromJson(row);
-      
     } catch (e) {
       final errorStr = e.toString().toLowerCase();
-      
-      if (errorStr.contains('duplicate key') || 
+
+      if (errorStr.contains('duplicate key') ||
           errorStr.contains('already exists') ||
           errorStr.contains('unique constraint')) {
         throw Exception('This recipe is already in your cookbook!');
       }
-      
+
       AppConfig.debugPrint('❌ Database error adding to cookbook: $e');
       throw Exception('Failed to add recipe to cookbook. Please try again.');
     }
@@ -184,7 +183,6 @@ class CookbookService {
       );
 
       await DatabaseServiceCore.clearCache(_CACHE_KEY);
-      
     } catch (e) {
       AppConfig.debugPrint('❌ Error removing from cookbook: $e');
       throw Exception('Failed to remove recipe from cookbook. Please try again.');
@@ -204,9 +202,8 @@ class CookbookService {
         recipeId: recipeId,
         recipeName: recipeName,
       );
-      
+
       return existing != null;
-      
     } catch (e) {
       AppConfig.debugPrint('⚠️ Error checking cookbook: $e');
       return false;
@@ -234,7 +231,6 @@ class CookbookService {
       );
 
       await DatabaseServiceCore.clearCache(_CACHE_KEY);
-      
     } catch (e) {
       AppConfig.debugPrint('❌ Error updating notes: $e');
       throw Exception('Failed to update notes. Please try again.');
@@ -252,6 +248,57 @@ class CookbookService {
     } catch (e) {
       AppConfig.debugPrint('⚠️ Error getting cookbook count: $e');
       return 0;
+    }
+  }
+
+  // 🆕 Submit cookbook recipe for community review
+  static Future<void> submitRecipeForReview(CookbookRecipe recipe) async {
+    if (AuthService.currentUserId == null) {
+      throw Exception('Please sign in to continue');
+    }
+
+    try {
+      // First, create a draft recipe
+      final draftRecipeId = await DatabaseServiceCore.workerQuery(
+        action: 'insert',
+        table: 'draft_recipes',
+        data: {
+          'user_id': AuthService.currentUserId!,
+          'title': recipe.recipeName,
+          'ingredients': recipe.ingredients,
+          'instructions': recipe.directions,
+          'servings': recipe.servings ?? 1,
+          'nutrition': recipe.nutrition?.toJsonString(),
+          'created_at': DateTime.now().toIso8601String(),
+        },
+      );
+
+      // Get the ID from the response
+      final draftId = (draftRecipeId as List).first['id'];
+
+      // Then submit it for review
+      await DatabaseServiceCore.workerQuery(
+        action: 'insert',
+        table: 'submitted_recipes',
+        data: {
+          'user_id': AuthService.currentUserId!,
+          'draft_recipe_id': draftId,
+          'status': 'pending',
+          'submitted_at': DateTime.now().toIso8601String(),
+        },
+      );
+
+      AppConfig.debugPrint('✅ Recipe submitted for review successfully');
+    } catch (e) {
+      final errorStr = e.toString().toLowerCase();
+
+      if (errorStr.contains('already submitted') ||
+          errorStr.contains('duplicate key')) {
+        throw Exception('This recipe has already been submitted for review!');
+      }
+
+      AppConfig.debugPrint('❌ Error submitting recipe for review: $e');
+      throw Exception('Failed to submit recipe for review. Please try again.');
     }
   }
 }

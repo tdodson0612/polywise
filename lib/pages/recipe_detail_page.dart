@@ -11,6 +11,7 @@ import '../services/error_handling_service.dart';
 import '../services/auth_service.dart';
 import '../pages/user_profile_page.dart';
 import '../models/favorite_recipe.dart';
+import '../services/profile_service.dart';
 
 class RecipeDetailPage extends StatefulWidget {
   final String recipeName;
@@ -39,15 +40,17 @@ class RecipeDetailPage extends StatefulWidget {
 class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _commentController = TextEditingController();
-  
+
   List<Map<String, dynamic>> _comments = [];
   bool _isLoadingComments = false;
   bool _isSubmittingComment = false;
   String? _replyingToCommentId;
   String? _replyingToUsername;
-  
+
   bool _isFavorite = false;
   bool _isLoadingFavorite = true;
+
+  String? _currentPCOSProfile;
 
   // Cache configuration
   static const Duration _commentsCacheDuration = Duration(minutes: 2);
@@ -59,6 +62,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
     _tabController = TabController(length: 2, vsync: this);
     _loadComments();
     _checkIfFavorite();
+    _loadPCOSProfile();
   }
 
   @override
@@ -75,21 +79,21 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
     try {
       final prefs = await SharedPreferences.getInstance();
       final cached = prefs.getString(_getCommentsCacheKey());
-      
+
       if (cached == null) return null;
-      
+
       final data = json.decode(cached);
       final timestamp = data['_cached_at'] as int?;
-      
+
       if (timestamp == null) return null;
-      
+
       final age = DateTime.now().millisecondsSinceEpoch - timestamp;
       if (age > _commentsCacheDuration.inMilliseconds) return null;
-      
+
       final comments = (data['comments'] as List)
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
-      
+
       print('📦 Using cached comments (${comments.length} found)');
       return comments;
     } catch (e) {
@@ -125,18 +129,18 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
     try {
       final prefs = await SharedPreferences.getInstance();
       final cached = prefs.getString(_getFavoriteCacheKey());
-      
+
       if (cached == null) return null;
-      
+
       final data = json.decode(cached);
       final timestamp = data['_cached_at'] as int?;
       final isFavorite = data['is_favorite'] as bool?;
-      
+
       if (timestamp == null || isFavorite == null) return null;
-      
+
       final age = DateTime.now().millisecondsSinceEpoch - timestamp;
       if (age > _favoriteCacheDuration.inMilliseconds) return null;
-      
+
       return isFavorite;
     } catch (e) {
       return null;
@@ -160,7 +164,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
     try {
       // Try cache first
       final cached = await _getCachedFavoriteStatus();
-      
+
       if (cached != null) {
         if (mounted) {
           setState(() {
@@ -174,7 +178,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
       // Cache miss, check SharedPreferences (legacy storage)
       final prefs = await SharedPreferences.getInstance();
       final favoriteRecipesJson = prefs.getStringList('favorite_recipes_detailed') ?? [];
-      
+
       final favorites = favoriteRecipesJson
           .map((jsonString) {
             try {
@@ -186,12 +190,12 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
           .where((recipe) => recipe != null)
           .cast<FavoriteRecipe>()
           .toList();
-      
+
       final isFavorite = favorites.any((fav) => fav.recipeName == widget.recipeName);
-      
+
       // Cache the result
       await _cacheFavoriteStatus(isFavorite);
-      
+
       if (mounted) {
         setState(() {
           _isFavorite = isFavorite;
@@ -207,11 +211,28 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
     }
   }
 
+  // Load PCOS profile for personalized tips
+  Future<void> _loadPCOSProfile() async {
+    try {
+      final userId = AuthService.currentUserId;
+      if (userId == null) return;
+      final pcosProfile = await ProfileService.getPCOSType(userId);
+      if (mounted) {
+        setState(() {
+          _currentPCOSProfile = pcosProfile;
+        });
+      }
+    } catch (e) {
+      // Silently fail - tips section just won't show
+      print('Could not load PCOS profile: $e');
+    }
+  }
+
   Future<void> _toggleFavorite() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final currentUserId = AuthService.currentUserId;
-      
+
       if (currentUserId == null) {
         if (mounted) {
           ErrorHandlingService.showSimpleError(
@@ -223,7 +244,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
       }
 
       final favoriteRecipesJson = prefs.getStringList('favorite_recipes_detailed') ?? [];
-      
+
       final favorites = favoriteRecipesJson
           .map((jsonString) {
             try {
@@ -235,21 +256,21 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
           .where((recipe) => recipe != null)
           .cast<FavoriteRecipe>()
           .toList();
-      
+
       final existingIndex = favorites.indexWhere((fav) => fav.recipeName == widget.recipeName);
-      
+
       if (existingIndex >= 0) {
         // Remove from favorites
         favorites.removeAt(existingIndex);
-        
+
         // Update cache
         await _cacheFavoriteStatus(false);
-        
+
         if (mounted) {
           setState(() {
             _isFavorite = false;
           });
-          
+
           ErrorHandlingService.showSuccess(
             context,
             'Removed "${widget.recipeName}" from favorites',
@@ -265,30 +286,30 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
           directions: widget.directions,
           createdAt: DateTime.now(),
         );
-        
+
         favorites.add(favoriteRecipe);
-        
+
         // Update cache
         await _cacheFavoriteStatus(true);
-        
+
         if (mounted) {
           setState(() {
             _isFavorite = true;
           });
-          
+
           ErrorHandlingService.showSuccess(
             context,
             'Added "${widget.recipeName}" to favorites!',
           );
         }
       }
-      
+
       // Save to SharedPreferences
       final updatedJson = favorites
           .map((recipe) => json.encode(recipe.toJson()))
           .toList();
       await prefs.setStringList('favorite_recipes_detailed', updatedJson);
-      
+
     } catch (e) {
       if (mounted) {
         ErrorHandlingService.showSimpleError(
@@ -305,7 +326,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
         widget.recipeName,
         widget.ingredients,
       );
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -389,7 +410,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Recipe shared to your feed (${visibility == 'public' ? 'Public' : 'Friends Only'})!'
+                    'Recipe shared to your feed (${visibility == 'public' ? 'Public' : 'Friends Only'})!',
                   ),
                 ),
               ],
@@ -425,7 +446,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
       // Try cache first unless force refresh
       if (!forceRefresh) {
         final cachedComments = await _getCachedComments();
-        
+
         if (cachedComments != null) {
           if (mounted) {
             setState(() {
@@ -439,10 +460,10 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
 
       // Cache miss or force refresh, fetch from database
       final comments = await CommentsService.getRecipeComments(widget.recipeId);
-      
+
       // Cache the results
       await _cacheComments(comments);
-      
+
       if (mounted) {
         setState(() {
           _comments = comments;
@@ -454,7 +475,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
         setState(() {
           _isLoadingComments = false;
         });
-        
+
         // Try to use cached data even if stale
         final staleComments = await _getCachedComments();
         if (staleComments != null && mounted) {
@@ -462,7 +483,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
             _comments = staleComments;
           });
         }
-        
+
         ErrorHandlingService.showSimpleError(
           context,
           'Unable to load comments',
@@ -522,7 +543,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
   Future<void> _toggleLikeComment(String commentId) async {
     try {
       final isLiked = await CommentsService.hasUserLikedPost(commentId);
-      
+
       if (isLiked) {
         await CommentsService.unlikeComment(commentId);
       } else {
@@ -580,11 +601,11 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
     if (confirm == true) {
       try {
         await CommentsService.deleteComment(commentId);
-        
+
         // Invalidate cache and reload
         await _invalidateCommentsCache();
         await _loadComments(forceRefresh: true);
-        
+
         if (mounted) {
           ErrorHandlingService.showSuccess(context, 'Comment deleted');
         }
@@ -639,7 +660,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
                 try {
                   await CommentsService.reportComment(commentId, reason);
                   Navigator.pop(context);
-                  
+
                   if (mounted) {
                     ErrorHandlingService.showSuccess(
                       context,
@@ -802,7 +823,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
 
   String _formatTimeAgo(String? timestamp) {
     if (timestamp == null) return '';
-    
+
     try {
       final dateTime = DateTime.parse(timestamp);
       final now = DateTime.now();
@@ -859,6 +880,61 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
         ],
       ),
     );
+  }
+
+  // 🔥 NEW: Get PCOS-specific nutrition tip
+  String _getPCOSNutritionTip() {
+    final sugar = widget.nutrition?.sugar ?? 0;
+    final protein = widget.nutrition?.protein ?? 0;
+    final fat = widget.nutrition?.fat ?? 0;
+
+    switch (_currentPCOSProfile?.toLowerCase()) {
+      case 'insulin resistant':
+      case 'insulin resistance':
+        if (sugar > 15) {
+          return '⚠️ High sugar may worsen insulin resistance. Consider reducing portion size.';
+        } else if (protein >= 20) {
+          return '✅ Good protein content to support blood sugar stability!';
+        }
+        return 'Focus on low-GI foods and balanced protein intake to manage insulin levels.';
+
+      case 'lean pcos':
+      case 'lean':
+        if (protein >= 20) {
+          return '✅ Great protein content for lean PCOS management!';
+        } else if (protein < 15) {
+          return 'Consider adding a protein supplement to support hormone balance.';
+        }
+        return 'Focus on anti-inflammatory foods and adequate protein intake.';
+
+      case 'adrenal pcos':
+      case 'adrenal':
+        if (fat > 20) {
+          return '⚠️ High fat may increase cortisol load. Opt for healthy fats in moderation.';
+        }
+        return 'Prioritize stress-reducing foods and avoid blood sugar spikes.';
+
+      case 'inflammatory pcos':
+      case 'inflammatory':
+        if (sugar > 10 || fat > 15) {
+          return '⚠️ High sugar/fat may increase inflammation. Choose anti-inflammatory options.';
+        } else if (protein >= 20) {
+          return '✅ Good protein content to support PCOS management!';
+        }
+        return 'Focus on anti-inflammatory foods like leafy greens, berries, and omega-3s.';
+
+      case 'post-pill pcos':
+      case 'post pill':
+        if (protein >= 20) {
+          return '✅ Great protein content to support hormone recovery!';
+        } else if (sugar > 15) {
+          return '⚠️ High sugar may delay hormone rebalancing. Reduce added sugars.';
+        }
+        return 'Support hormone rebalancing with nutrient-dense, low-sugar foods.';
+
+      default:
+        return 'Consult your PCOS nutrition expert for personalized dietary advice.';
+    }
   }
 
   @override
@@ -963,7 +1039,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
                           ],
                         ),
                       ),
-                      
+
                       SizedBox(height: 24),
 
                       // Description section (if exists)
@@ -983,10 +1059,9 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.info_outline, 
-                                    size: 20, 
-                                    color: Colors.blue.shade700
-                                  ),
+                                  Icon(Icons.info_outline,
+                                      size: 20,
+                                      color: Colors.blue.shade700),
                                   SizedBox(width: 8),
                                   Text(
                                     'About This Recipe',
@@ -1012,7 +1087,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
                         ),
                         SizedBox(height: 24),
                       ],
-                      
+
                       Text(
                         'Ingredients',
                         style: TextStyle(
@@ -1038,7 +1113,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
                         const SizedBox(height: 24),
                         const Divider(thickness: 2),
                         const SizedBox(height: 16),
-                        
+
                         Row(
                           children: [
                             Icon(Icons.restaurant_menu, color: Colors.green, size: 24),
@@ -1053,15 +1128,15 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
                           ],
                         ),
                         const SizedBox(height: 16),
-                        
+
                         NutritionFactsLabel(
                           nutrition: widget.nutrition!,
                           servings: widget.servings,
                           showPCOSScore: true,
                         ),
-                        
+
                         const SizedBox(height: 16),
-                        
+
                         // Quick nutrition insights
                         Container(
                           padding: const EdgeInsets.all(12),
@@ -1088,45 +1163,97 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> with SingleTickerPr
                                 ],
                               ),
                               const SizedBox(height: 12),
-                              
+
                               if (widget.servings != null)
                                 _buildNutritionInsight(
                                   'Calories per serving',
                                   '${(widget.nutrition!.calories / widget.servings!).toStringAsFixed(0)} kcal',
-                                  widget.nutrition!.calories / widget.servings! < 300 
-                                    ? Colors.green 
-                                    : widget.nutrition!.calories / widget.servings! < 500
-                                      ? Colors.orange
-                                      : Colors.red,
+                                  widget.nutrition!.calories / widget.servings! < 300
+                                      ? Colors.green
+                                      : widget.nutrition!.calories / widget.servings! < 500
+                                          ? Colors.orange
+                                          : Colors.red,
                                 ),
-                              
+
                               if (widget.nutrition!.protein > 0)
                                 _buildNutritionInsight(
                                   'Protein content',
                                   '${widget.nutrition!.protein.toStringAsFixed(1)}g total',
                                   widget.nutrition!.protein >= 20 ? Colors.green : Colors.grey,
                                 ),
-                              
+
+                              // Sugar insight
+                              if (widget.nutrition!.sugar > 0)
+                                _buildNutritionInsight(
+                                  'Sugar content',
+                                  '${widget.nutrition!.sugar.toStringAsFixed(1)}g total',
+                                  widget.nutrition!.sugar <= 5
+                                      ? Colors.green
+                                      : widget.nutrition!.sugar <= 10
+                                          ? Colors.orange
+                                          : Colors.red,
+                                ),
+
                               if (widget.nutrition!.fiber != null && widget.nutrition!.fiber! > 0)
                                 _buildNutritionInsight(
                                   'Fiber content',
                                   '${widget.nutrition!.fiber!.toStringAsFixed(1)}g total',
                                   widget.nutrition!.fiber! >= 5 ? Colors.green : Colors.grey,
                                 ),
-                              
+
                               if (widget.nutrition!.sodium > 0)
                                 _buildNutritionInsight(
                                   'Sodium',
                                   '${widget.nutrition!.sodium.toStringAsFixed(0)}mg total',
-                                  widget.nutrition!.sodium < 400 
-                                    ? Colors.green 
-                                    : widget.nutrition!.sodium < 800
-                                      ? Colors.orange
-                                      : Colors.red,
+                                  widget.nutrition!.sodium < 400
+                                      ? Colors.green
+                                      : widget.nutrition!.sodium < 800
+                                          ? Colors.orange
+                                          : Colors.red,
                                 ),
                             ],
                           ),
                         ),
+
+                        // 🔥 NEW: PCOS-Specific Tips Section
+                        const SizedBox(height: 12),
+                        if (_currentPCOSProfile != null && _currentPCOSProfile != 'Not specified') ...[
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.green.shade200),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.medical_services, size: 16, color: Colors.green.shade700),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'For $_currentPCOSProfile',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.green.shade900,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  _getPCOSNutritionTip(),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey.shade800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ],
                   ),

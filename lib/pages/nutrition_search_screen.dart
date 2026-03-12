@@ -402,6 +402,202 @@ class _NutritionSearchScreenState extends State<NutritionSearchScreen> {
     return _recipeSuggestions.sublist(_currentRecipeIndex, endIndex);
   }
 
+  /// Calculate a simple PCOS score based on nutrition values
+  int _calculatePCOSScore(NutritionInfo nutrition) {
+    int score = 50; // Start at neutral
+
+    // Get nullable-safe values
+    final protein = nutrition.protein ?? 0.0;
+    final sugar = nutrition.sugar ?? 0.0;
+    final fat = nutrition.fat ?? 0.0;
+    final fiber = nutrition.fiber ?? 0.0;
+    final sodium = nutrition.sodium ?? 0.0;
+
+    // Protein is good
+    if (protein > 20) {
+      score += 20;
+    } else if (protein > 15) {
+      score += 10;
+    } else if (protein < 10) {
+      score -= 10;
+    }
+
+    // Sugar is bad
+    if (sugar > 15) {
+      score -= 25;
+    } else if (sugar > 10) {
+      score -= 15;
+    } else if (sugar < 5) {
+      score += 10;
+    }
+
+    // Fat considerations
+    if (fat > 20) {
+      score -= 15;
+    } else if (fat > 15) {
+      score -= 10;
+    }
+
+    // Fiber is good
+    if (fiber > 5) {
+      score += 10;
+    } else if (fiber > 3) {
+      score += 5;
+    }
+
+    // Sodium
+    if (sodium > 500) {
+      score -= 10;
+    }
+
+    return score.clamp(0, 100);
+  }
+
+  /// Build PCOS-specific warnings widget
+  Widget _buildPCOSWarnings(NutritionInfo nutrition) {
+    final warnings = <String>[];
+    final cautions = <String>[];
+
+    // Get nullable-safe values
+    final sugar = nutrition.sugar ?? 0.0;
+    final fat = nutrition.fat ?? 0.0;
+    final protein = nutrition.protein ?? 0.0;
+    final sodium = nutrition.sodium ?? 0.0;
+
+    // High sugar warning (impacts insulin resistance common in PCOS)
+    if (sugar > 10) {
+      warnings.add('⚠️ High Sugar (${sugar.toStringAsFixed(1)}g) - May worsen insulin resistance');
+    }
+
+    // High fat warning
+    if (fat > 15) {
+      warnings.add('⚠️ High Fat (${fat.toStringAsFixed(1)}g) - May contribute to inflammation');
+    }
+
+    // Low protein caution
+    if (protein < 15) {
+      cautions.add('ℹ️ Low Protein (${protein.toStringAsFixed(1)}g) - Consider a protein supplement');
+    }
+
+    // High sodium caution
+    if (sodium > 400) {
+      cautions.add('ℹ️ High Sodium (${sodium.toStringAsFixed(0)}mg) - Stay hydrated');
+    }
+
+    if (warnings.isEmpty && cautions.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.deepPurple.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.deepPurple.shade200),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.deepPurple.shade700, size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'This food appears PCOS-friendly!',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.deepPurple.shade900,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        if (warnings.isNotEmpty) ...[
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.red.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.warning, color: Colors.red.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'PCOS Warnings',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red.shade900,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ...warnings.map((warning) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    warning,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.red.shade900,
+                    ),
+                  ),
+                )),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (cautions.isNotEmpty) ...[
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.orange.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'PCOS Tips',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade900,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ...cautions.map((caution) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    caution,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.orange.shade900,
+                    ),
+                  ),
+                )),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _buildRecipeCard(Recipe recipe) {
     final isFavorite = _isRecipeFavorited(recipe.title);
 
@@ -539,7 +735,7 @@ class _NutritionSearchScreenState extends State<NutritionSearchScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       decoration: BoxDecoration(
                         color: selected 
-                            ? Colors.green 
+                            ? Colors.deepPurple 
                             : Colors.white.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
@@ -616,7 +812,7 @@ class _NutritionSearchScreenState extends State<NutritionSearchScreen> {
                     icon: const Icon(Icons.arrow_forward, size: 16),
                     label: const Text('Next'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: Colors.deepPurple,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -702,7 +898,7 @@ class _NutritionSearchScreenState extends State<NutritionSearchScreen> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: isSelected
-                  ? const BorderSide(color: Colors.green, width: 2)
+                  ? const BorderSide(color: Colors.blue, width: 2)
                   : BorderSide.none,
             ),
             color: isSelected ? Colors.green.shade50 : null,
@@ -717,14 +913,14 @@ class _NutritionSearchScreenState extends State<NutritionSearchScreen> {
                   ? const Text(
                       "Selected - View details below",
                       style: TextStyle(
-                        color: Colors.green,
+                        color: Colors.blue,
                         fontSize: 12,
                       ),
                     )
                   : null,
               trailing: Icon(
                 isSelected ? Icons.check_circle : Icons.chevron_right,
-                color: isSelected ? Colors.green : null,
+                color: isSelected ? Colors.deepPurple : null,
               ),
               onTap: () => _selectItem(item),
             ),
@@ -739,7 +935,7 @@ class _NutritionSearchScreenState extends State<NutritionSearchScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Search Nutrition"),
-        backgroundColor: Colors.green,
+        backgroundColor: Colors.deepPurple,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -749,13 +945,13 @@ class _NutritionSearchScreenState extends State<NutritionSearchScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.green.shade50,
+                color: Colors.deepPurple.shade50,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.green.shade200),
+                border: Border.all(color: Colors.deepPurple.shade200),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.filter_list, color: Colors.green.shade700, size: 20),
+                  Icon(Icons.filter_list, color: Colors.deepPurple.shade700, size: 20),
                   const SizedBox(width: 8),
                   const Text(
                     'Search by:',
@@ -859,7 +1055,7 @@ class _NutritionSearchScreenState extends State<NutritionSearchScreen> {
                   style: const TextStyle(fontSize: 18),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: Colors.deepPurple,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -883,7 +1079,7 @@ class _NutritionSearchScreenState extends State<NutritionSearchScreen> {
               const Divider(thickness: 2),
               const SizedBox(height: 12),
               
-              // 🔥 NEW: Tabbed Nutrition View
+              // 🔥 Tabbed Nutrition View
               DefaultTabController(
                 length: 2,
                 child: Column(
@@ -895,9 +1091,9 @@ class _NutritionSearchScreenState extends State<NutritionSearchScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: TabBar(
-                        labelColor: Colors.green,
+                        labelColor: Colors.deepPurple,
                         unselectedLabelColor: Colors.grey.shade600,
-                        indicatorColor: Colors.green,
+                        indicatorColor: Colors.deepPurple,
                         indicatorWeight: 3,
                         tabs: [
                           Tab(
@@ -954,6 +1150,9 @@ class _NutritionSearchScreenState extends State<NutritionSearchScreen> {
                                     calories: _selectedItem!.calories,
                                   ),
                                 ),
+                                const SizedBox(height: 16),
+                                // PCOS-specific warnings
+                                _buildPCOSWarnings(_selectedItem!),
                               ],
                             ),
                           ),
@@ -1001,7 +1200,7 @@ class _NutritionSearchScreenState extends State<NutritionSearchScreen> {
                                                     ScaffoldMessenger.of(context).showSnackBar(
                                                       SnackBar(
                                                         content: Text('Saved "${_selectedItem!.productName}" to ingredients!'),
-                                                        backgroundColor: Colors.green,
+                                                        backgroundColor: Colors.deepPurple,
                                                       ),
                                                     );
                                                   }
@@ -1036,7 +1235,7 @@ class _NutritionSearchScreenState extends State<NutritionSearchScreen> {
                                                     ScaffoldMessenger.of(context).showSnackBar(
                                                       SnackBar(
                                                         content: Text('Added to grocery list!'),
-                                                        backgroundColor: Colors.green,
+                                                        backgroundColor: Colors.deepPurple,
                                                         action: SnackBarAction(
                                                           label: 'VIEW',
                                                           textColor: Colors.white,
